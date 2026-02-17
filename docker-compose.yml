@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+   #↓自分のパソコンでファイルを書き換えた時、Dockerの中身も同時に書き換わる設定
+    volumes: 
+      - .:/app
