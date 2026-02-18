@@ -24,8 +24,20 @@
         <h1>{{ title }}</h1>
         
         <div class="calendar-grid">
-            {% for day in days %}
-                <div class="day-box">{{ day }}</div>
+            <!-- 曜日の表示 -->
+            {% for w_day in week_days %}
+                <div class="day-box" style="background-color: #eee; font-weight: bold;">{{ w_day }}</div>
+            {% endfor %}
+
+            <!-- 日付の表示 -->
+            {% for week in cal %}
+                {% for day in week %}
+                    <div class="day-box">
+                        {% if day != 0 %}
+                            {{ day }}
+                        {% endif %}
+                    </div>
+                {% endfor %}
             {% endfor %}
         </div>
     </body>
