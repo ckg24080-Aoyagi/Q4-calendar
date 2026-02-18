@@ -2,11 +2,31 @@
 <html>
     <head>
         <title>My Calendar</title>
+        <style>
+            /*カレンダーっぽく並べる*/
+            .calendar-grid{
+                display: grid;
+                grid-template-columns: repeat(7, 1fr); /*7列に並べる*/
+                gap: 10px;
+                max-width: 500px;
+            }
+            .day-box{
+                border: 1px solid #ccc;
+                padding: 10px;
+                text-align: center;
+            }
+        </style>
     </head>
 
+    
     <body>
         <!--　↓Python側から送ったデータをはめ込むことができる　-->
         <h1>{{ title }}</h1>
-        <p>今日は2026年2月17日です</p>
+        
+        <div class="calendar-grid">
+            {% for day in days %}
+                <div class="day-box">{{ day }}</div>
+            {% endfor %}
+        </div>
     </body>
 </html>
