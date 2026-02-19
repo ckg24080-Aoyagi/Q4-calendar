@@ -3,7 +3,6 @@
     <head>
         <title>My Calendar</title>
         <style>
-            /*カレンダーっぽく並べる*/
             .calendar-grid{
                 display: grid;
                 grid-template-columns: repeat(7, 1fr); /*7列に並べる*/
@@ -20,6 +19,16 @@
             }
             .sun-holiday{
                 color: red;
+            }
+            #modal{ /*スケジュール入力用のポップアップ（最初は隠しておく）*/
+                display: none;
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: white; border: 2px solid #333; padding: 20px; z-index: 1000;
+            }
+            #overlay{ /*背景を暗くする*/
+                display: none;
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(0,0,0,0,5); z-index: 999;
             }
         </style>
     </head>
@@ -57,7 +66,7 @@
                     {% endif %}
 
 
-                    <div class="day-box">
+                    <div class="day-box" style="cursor: pointer;" onclick="openModal('{{ day }}')">
                         <span class="{% if loop.index0 == 5 %}sat{% elif loop.index0 == 6 %}sun-holiday{% elif is_holiday %}sun-holiday{% endif %}">
                             {% if day != 0 %}
                                 {{ day }}
@@ -72,5 +81,41 @@
                 {% endfor %}
             {% endfor %}
         </div>
+
+        <div id="overlay"></div>
+        <div id="modal">
+            <h3 id="modal-date"></h3>
+            <input type="text" id="schedule-input" placeholder="予定を入力...">
+            <button onclick="saveSchedule()">保存</button>
+            <button onclick="closeModal()">閉じる</button>
+        </div>
+
+        <script>
+            const modal = document.getElementById('modal');
+            const overlay = document.getElementById('overlay');
+            const modalDate = document.getElementById('modal-date');
+
+            // Modalを開く
+            function openModal(day) {
+                if (day === '0') return; //空白マスは何もしない設定
+
+                modalDate.innerText = "2月 " + day + "日の予定"
+                modal.style.display = 'block';
+                overlay.style.display = "block"
+            }
+
+            //Modalを閉じる
+            function closeModal() {
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+            }
+
+            //保存ボタン（現段階ではアラートを出すのみ）
+            function saveSchedule() {
+                const text = document.getElementById('schedule-input').value;
+                alert("保存しました：" + text);
+                closeModal();
+            }
+        </script>
     </body>
 </html>
