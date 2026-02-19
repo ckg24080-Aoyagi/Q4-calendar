@@ -73,10 +73,15 @@
                             {% endif %}
                         </span>
 
+                        <!-- 日付の部分にスケジュールを表示させるための空の箱を用意 -->
+                        <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;"></div>
+
                         <!-- 祝日名の表示 -->
+                        <!--
                         {% if is_holiday %}
                             <div style="font-size: 0.6em; color: red;">{{ holiday_name }}</div>
                         {% endif %}
+                        -->
                     </div>
                 {% endfor %}
             {% endfor %}
@@ -90,18 +95,23 @@
             <button onclick="closeModal()">閉じる</button>
         </div>
 
+        
         <script>
             const modal = document.getElementById('modal');
             const overlay = document.getElementById('overlay');
             const modalDate = document.getElementById('modal-date');
 
+
+            //今どの日付を編集しているかを覚えておくための変数
+            let currentEditingDay = 0;
+
             // Modalを開く
             function openModal(day) {
-                if (day === '0') return; //空白マスは何もしない設定
-
-                modalDate.innerText = "2月 " + day + "日の予定"
+                if (day === '0') return
+                currentEditingDay = day; //ここで記録
+                modalDate.innerText = "2月 " + day + " 日の予定";
                 modal.style.display = 'block';
-                overlay.style.display = "block"
+                overlay.style.display = 'block';
             }
 
             //Modalを閉じる
@@ -112,10 +122,22 @@
 
             //保存ボタン（現段階ではアラートを出すのみ）
             function saveSchedule() {
+                //入力された文字の読み取り
                 const text = document.getElementById('schedule-input').value;
-                alert("保存しました：" + text);
+                
+                //今何日を編集しているかを取得
+                const day = currentEditingDay;
+
+                if (text) {
+                    //その日のスケジュール表示用の箱を見つけて、文字を入れる
+                    const scheduleBox = document.getElementById('schedule-' + day);
+                    scheduleBox.innerText = text;
+                }
+
+                //入力欄を空にして閉じる
+                document.getElementById('schedule-input').value = "";
                 closeModal();
-            }
+            }            
         </script>
     </body>
 </html>
