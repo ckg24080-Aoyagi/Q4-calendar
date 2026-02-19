@@ -15,6 +15,12 @@
                 padding: 10px;
                 text-align: center;
             }
+            .sat{
+                color: blue;
+            }
+            .sun-holiday{
+                color: red;
+            }
         </style>
     </head>
 
@@ -26,15 +32,41 @@
         <div class="calendar-grid">
             <!-- 曜日の表示 -->
             {% for w_day in week_days %}
-                <div class="day-box" style="background-color: #eee; font-weight: bold;">{{ w_day }}</div>
+                <!-- loop.index0は、forループの中で「今が何回目か」を0から数えてくれる変数。0(月) ~ 6(日)となる -->
+                <div class="day-box {% if loop.index0 == 5 %}sat{% elif loop.index0 == 6 %}sun-holiday{% endif %}">
+                    {{ w_day }}
+                </div>
             {% endfor %}
 
             <!-- 日付の表示 -->
             {% for week in cal %}
                 {% for day in week %}
+
+                    <!-- まず「祝日ではない」と決めておく -->
+                    {% set is_holiday = False %}
+                    {% set holiday_name = "" %}
+
+                    <!-- dayが0から大きい場合(正しい日付)のみ計算を行う -->
+                    <!-- その日が祝日かどうかのチェック(2026-02-xxの形式で) -->
+                    {% if day != 0 %}
+                        {% set date_str = "2026-02-%02d" | format(day) %}
+                        {% if date_str in jp_holidays %}
+                            {% set is_holiday = True %}
+                            {% set holiday_name = jp_holidays.get(date_str) %}
+                        {% endif %}
+                    {% endif %}
+
+
                     <div class="day-box">
-                        {% if day != 0 %}
-                            {{ day }}
+                        <span class="{% if loop.index0 == 5 %}sat{% elif loop.index0 == 6 %}sun-holiday{% elif is_holiday %}sun-holiday{% endif %}">
+                            {% if day != 0 %}
+                                {{ day }}
+                            {% endif %}
+                        </span>
+
+                        <!-- 祝日名の表示 -->
+                        {% if is_holiday %}
+                            <div style="font-size: 0.6em; color: red;">{{ holiday_name }}</div>
                         {% endif %}
                     </div>
                 {% endfor %}
