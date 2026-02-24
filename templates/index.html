@@ -74,7 +74,13 @@
                         </span>
 
                         <!-- 日付の部分にスケジュールを表示させるための空の箱を用意 -->
-                        <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;"></div>
+                        <!-- 保存された予定があれば表示させる -->
+                        {% set date_key = "2026-02-%02d" | format(day) %}
+                        <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;">
+                            {% if date_key in schedules %}
+                                {{ schedules[date_key] }}
+                            {% endif %}
+                        </div>
 
                         <!-- 祝日名の表示 -->
                         <!--
@@ -121,21 +127,23 @@
             }
 
             //保存ボタン（現段階ではアラートを出すのみ）
-            function saveSchedule() {
+            async function saveSchedule() {
                 //入力された文字の読み取り
                 const text = document.getElementById('schedule-input').value;
                 
                 //今何日を編集しているかを取得
                 const day = currentEditingDay;
 
-                if (text) {
-                    //その日のスケジュール表示用の箱を見つけて、文字を入れる
-                    const scheduleBox = document.getElementById('schedule-' + day);
-                    scheduleBox.innerText = text;
-                }
+                //サーバーに送る
+                await fetch("/save_schedule", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ day: day, text: text })
+                });
 
-                //入力欄を空にして閉じる
-                document.getElementById('schedule-input').value = "";
+                const scheduleBox = document.getElementById('schedule-' + day);
+                scheduleBox.innerText = text;
+
                 closeModal();
             }            
         </script>

@@ -9,6 +9,9 @@ app = FastAPI()
 #templatesフォルダを使うという設定
 templates = Jinja2Templates(directory="templates")
 
+#スケジュール保存用の変数を用意
+schedules = {} #{ "2026-02-11": "建国記念日", ... } 形式での保存
+
 #ブラウザでトップページ(/)にアクセスしたときの動きを決める
 @app.get("/")
 def read_root(request: Request):
@@ -25,5 +28,19 @@ def read_root(request: Request):
         "title": "2026年 2月",
         "week_days": week_days,
         "cal": cal, # 2次元のリスト（リストの中にリストが入っている状態）を送る
-        "jp_holidays": jp_holidays #祝日データを送る
+        "jp_holidays": jp_holidays, #祝日データを送る
+        "schedules": schedules #schedule変数（保存済みデータ）もHTMLに送る
     })
+    
+#スケジュールを受け取るためのルート
+@app.post("/save_schedule")
+async def save_schedule_api(request: Request):
+    data = await request.json()
+    day = data.get("day")
+    text = data.get("text")
+    
+    #2026-02-xx というキーで保存
+    date_key = f"2026-02-{int(day):02d}"
+    schedules[date_key] = text
+    
+    return {"status": "success"}
