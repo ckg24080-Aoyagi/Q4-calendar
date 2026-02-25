@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 import calendar
 import holidays
+import json
+import os
 
 #FastAPI の app(アプリの本体) を作る
 app = FastAPI()
@@ -9,8 +11,25 @@ app = FastAPI()
 #templatesフォルダを使うという設定
 templates = Jinja2Templates(directory="templates")
 
-#スケジュール保存用の変数を用意
-schedules = {} #{ "2026-02-11": "建国記念日", ... } 形式での保存
+#スケジュール保存先のファイルパス
+DATA_FILE = "schedules.json"
+
+#起動時にファイルからデータを読み込む関数
+def load_schedules():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+#初回起動時に読み込み
+schedules = load_schedules()
+
+#データをファイルに保存する関数
+def save_to_file():
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(schedules, f, ensure_ascii=False, indent=4)
+                                # ↑ これがないと日本語が文字化けする
+
 
 #ブラウザでトップページ(/)にアクセスしたときの動きを決める
 @app.get("/")
@@ -42,5 +61,8 @@ async def save_schedule_api(request: Request):
     #2026-02-xx というキーで保存
     date_key = f"2026-02-{int(day):02d}"
     schedules[date_key] = text
+    
+    #辞書を更新した後にファイルにも書き出す
+    save_to_file()
     
     return {"status": "success"}
