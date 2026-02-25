@@ -66,3 +66,17 @@ async def save_schedule_api(request: Request):
     save_to_file()
     
     return {"status": "success"}
+
+@app.post("/delete_schedule")
+async def delete_schedule_api(request: Request):
+    data = await request.json()
+    day = data.get("day")
+    
+    date_key = f"2026-02-{int(day):02d}"
+    
+    #もしデータがあれば削除する
+    if date_key in schedules:
+        del schedules[date_key]
+        save_to_file() #ファイルも同時に更新
+        
+    return {"status": "success"}
