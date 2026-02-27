@@ -84,13 +84,17 @@
 
                             <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;">
                                 {% if date_key in schedules %}
-                                    {{ schedules[date_key] }}
+                                    {% for item in schedules[date_key] %}
+                                        <div style="border-bottom: 1px solid #eee; margin-bottom: 2px;">
+                                            ・{{ item }}
+                                        </div>
+                                    {% endfor %}
                                 {% endif %}
                             </div>
 
                         <!-- 祝日名の表示 -->
                             {% if is_holiday %}
-                                <div style="font-size: 0.6em; color: red;">{{ holiday_name }}</div>
+                                <div style="font-size: 0.6em; color: red; font-weight: bold;">{{ holiday_name }}</div>
                             {% endif %}
                         {% endif %}
 
@@ -145,6 +149,8 @@
                 //今何日を編集しているかを取得
                 const day = currentEditingDay;
 
+                if (!text) return
+
                 //サーバーに送る
                 await fetch("/save_schedule", {
                     method: "POST",
@@ -157,9 +163,19 @@
                         text: text })
                 });
 
+                //修正：元々「上書き(innerText = text)」だったものを「追加(appendChild)」に変更
                 const scheduleBox = document.getElementById('schedule-' + day);
-                scheduleBox.innerText = text;
 
+                //新しい予定用の小さな箱(div)を作って追加
+                const newEntry = document.createElement('div');
+                newEntry.style.borderBottom = "1px solid #eee";
+                newEntry.style.marginBottom = "2px";
+                newEntry.innerText = "・" + text;
+
+                scheduleBox.appendChild(newEntry);
+
+
+                document.getElementById('schedule-input').value = "";
                 closeModal();
             }
 
