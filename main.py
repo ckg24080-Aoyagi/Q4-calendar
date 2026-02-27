@@ -33,18 +33,21 @@ def save_to_file():
 
 #ブラウザでトップページ(/)にアクセスしたときの動きを決める
 @app.get("/")
-def read_root(request: Request):
-    jp_holidays = holidays.Japan(years=2026)
+def read_root(request: Request, year: int = 2026, month: int = 2):
+    # calendar.monthcalendar(年、月)を使って、指定された月のデータを生成
+    cal = calendar.monthcalendar(year, month)
     
-    #monthcalendar(年,月)は1週間ごとのリストを返す。その月に含まれていない日(今回の場合3/1等)は 0 として帰ってくる
-    cal = calendar.monthcalendar(2026, 2)
+    jp_holidays = holidays.Japan(years=year)
     
     #曜日リスト(HTMLで表示する用)
     week_days = ["月", "火", "水", "木", "金", "土", "日"]
     
+    #予定データのキーを月ごとに判定しやすくするために年、月もHTMLに渡す
     return templates.TemplateResponse("index.html",{
         "request": request,
-        "title": "2026年 2月",
+        "title": f"{year}年 {month}月",
+        "year": year,
+        "month": month,
         "week_days": week_days,
         "cal": cal, # 2次元のリスト（リストの中にリストが入っている状態）を送る
         "jp_holidays": jp_holidays, #祝日データを送る
@@ -55,11 +58,13 @@ def read_root(request: Request):
 @app.post("/save_schedule")
 async def save_schedule_api(request: Request):
     data = await request.json()
+    year = data.get("year")
+    month = data.get("month")
     day = data.get("day")
     text = data.get("text")
     
     #2026-02-xx というキーで保存
-    date_key = f"2026-02-{int(day):02d}"
+    date_key = f"{year}-{int(month):02d}-{int(day):02d}"
     schedules[date_key] = text
     
     #辞書を更新した後にファイルにも書き出す
@@ -70,9 +75,11 @@ async def save_schedule_api(request: Request):
 @app.post("/delete_schedule")
 async def delete_schedule_api(request: Request):
     data = await request.json()
+    year = data.get("year")
+    month = data.get("month")
     day = data.get("day")
     
-    date_key = f"2026-02-{int(day):02d}"
+    date_key = f"{year}-{int(month):02d}-{int(day):02d}"
     
     #もしデータがあれば削除する
     if date_key in schedules:

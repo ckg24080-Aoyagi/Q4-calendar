@@ -35,8 +35,12 @@
 
     
     <body>
-        <!--　↓Python側から送ったデータをはめ込むことができる　-->
-        <h1>{{ title }}</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button onclick="changeMonth(-1)">← 前の月</button>
+             <!-- ↓Python側から送ったデータをはめ込むことができる　-->
+            <h2>{{title}}</h2>
+            <button onclick="changeMonth(1)">次の月 →</button>
+        </div>
         
         <div class="calendar-grid">
             <!-- 曜日の表示 -->
@@ -58,7 +62,7 @@
                     <!-- dayが0から大きい場合(正しい日付)のみ計算を行う -->
                     <!-- その日が祝日かどうかのチェック(2026-02-xxの形式で) -->
                     {% if day != 0 %}
-                        {% set date_str = "2026-02-%02d" | format(day) %}
+                        {% set date_str = "%04d-%02d-%02d" | format(year, month, day) %}
                         {% if date_str in jp_holidays %}
                             {% set is_holiday = True %}
                             {% set holiday_name = jp_holidays.get(date_str) %}
@@ -75,19 +79,21 @@
 
                         <!-- 日付の部分にスケジュールを表示させるための空の箱を用意 -->
                         <!-- 保存された予定があれば表示させる -->
-                        {% set date_key = "2026-02-%02d" | format(day) %}
-                        <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;">
-                            {% if date_key in schedules %}
-                                {{ schedules[date_key] }}
-                            {% endif %}
-                        </div>
+                        {% if day > 0 %}
+                            {% set date_key = "%04d-%02d-%02d" | format(year, month, day) %}
+
+                            <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;">
+                                {% if date_key in schedules %}
+                                    {{ schedules[date_key] }}
+                                {% endif %}
+                            </div>
 
                         <!-- 祝日名の表示 -->
-                        <!--
-                        {% if is_holiday %}
-                            <div style="font-size: 0.6em; color: red;">{{ holiday_name }}</div>
+                            {% if is_holiday %}
+                                <div style="font-size: 0.6em; color: red;">{{ holiday_name }}</div>
+                            {% endif %}
                         {% endif %}
-                        -->
+
                     </div>
                 {% endfor %}
             {% endfor %}
@@ -112,11 +118,15 @@
             //今どの日付を編集しているかを覚えておくための変数
             let currentEditingDay = 0;
 
+            //Pythonから渡された現在の年月をJS変数にセット
+            let currentYear = {{ year }};
+            let currentMonth = {{ month }};
+
             // Modalを開く
             function openModal(day) {
                 if (day === '0') return
                 currentEditingDay = day; //ここで記録
-                modalDate.innerText = "2月 " + day + " 日の予定";
+                modalDate.innerText = currentYear + "年 " + currentMonth + "月 " + day + " 日の予定";
                 modal.style.display = 'block';
                 overlay.style.display = 'block';
             }
@@ -139,7 +149,12 @@
                 await fetch("/save_schedule", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ day: day, text: text })
+                    //dayだけではなくyearとmonthも一緒に送るようにする
+                    body: JSON.stringify({
+                        year: currentYear,
+                        month: currentMonth,
+                        day: day,
+                        text: text })
                 });
 
                 const scheduleBox = document.getElementById('schedule-' + day);
@@ -163,7 +178,12 @@
                 await fetch("/delete_schedule", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ day: day })
+                    //削除するときも「どの年月か」を伝える
+                    body: JSON.stringify({
+                        year: currentYear,
+                        month: currentMonth,
+                        day: day 
+                    })
                 });
 
                 //画面上の表示も消す
@@ -173,6 +193,22 @@
                 //入力欄も空にして閉じる
                 document.getElementById('schedule-input').value = "";
                 closeModal();
+            }
+
+            function changeMonth(diff) {
+                currentMonth += diff;
+
+                //13月になった場合は翌年の1月に、0月になったら前年の12月に調整する
+                if (currentMonth > 12) {
+                    currentMonth = 1;
+                    currentYear ++;
+                } else if (currentMonth < 1) {
+                    currentMonth = 12;
+                    currentYear --;
+                }
+
+                //新しい年月のURLに移動、ページがリロードされる
+                window.location.href = `/?year=${currentYear}&month=${currentMonth}`;
             }
         </script>
     </body>
