@@ -82,12 +82,22 @@ async def delete_schedule_api(request: Request):
     year = data.get("year")
     month = data.get("month")
     day = data.get("day")
+    index = data.get("index") #消したい予定が何番目にあるかを受け取る
     
     date_key = f"{year}-{int(month):02d}-{int(day):02d}"
     
     #もしデータがあれば削除する
     if date_key in schedules:
-        del schedules[date_key]
-        save_to_file() #ファイルも同時に更新
+        try:
+            # Pythonのリストから「〇番目」の要素を取り除く
+            schedules[date_key].pop(index)
+            
+            # もしその日の予定がゼロになったら、キー自体を消す
+            if not schedules[date_key]:
+                del schedules[date_key]
+                
+            save_to_file()
+        except IndexError:
+            pass # 指定された番号がなければ何もしない
         
     return {"status": "success"}

@@ -135,7 +135,7 @@
             let currentMonth = {{ month }};
 
             // Modalを開く
-            function openModal(day) {
+            async function openModal(day) {
                 if (day === '0') return
                 currentEditingDay = day; //ここで記録
                 modalDate.innerText = currentYear + "年 " + currentMonth + "月 " + day + " 日の予定一覧";
@@ -152,11 +152,29 @@
                     modalList.innerHTML = "<li style='color: #888;'>予定はありません</li>";
                 } else {
                     //マスの中にある予定を一つずつ取り出して、モーダル用のリストを作る
-                    for (let entry of dayBoxSchedules) {
+                    for (let i = 0; i < dayBoxSchedules.length; i++) {
                         const li = document.createElement('li');
-                        li.innerText = entry.innerText;
-                        li.style.padding = "5px 0";
+                        li.style.display = "flex";
+                        li.style.justifyContent = "space-between";
+                        li.style.padding = "8px 0";
                         li.style.borderBottom = "1px solid #eee";
+
+                        //予定のテキスト
+                        const textSpan = document.createElement('span');
+                        textSpan.innerText = dayBoxSchedules[i].innerText;
+
+                        //削除ボタン
+                        const delBtn = document.createElement('button');
+                        delBtn.innerText = "❌";
+                        delBtn.style.backgroundColor = "transparent";
+                        delBtn.style.border = "none";
+                        delBtn.style.cursor = "pointer";
+
+                        //ボタンが押されたらdeleteOne(何番目か)を実行
+                        delBtn.onclick = () => deleteOne(i);
+
+                        li.appendChild(textSpan);
+                        li.appendChild(delBtn);
                         modalList.appendChild(li);
                     }
                 }
@@ -255,6 +273,26 @@
 
                 //新しい年月のURLに移動、ページがリロードされる
                 window.location.href = `/?year=${currentYear}&month=${currentMonth}`;
+            }
+
+            async function deleteOne(index) {
+                if (!confirm("この予定を削除しますか？")) return;
+
+                await fetch("/delete_schedule", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        year: currentYear,
+                        month: currentMonth,
+                        day: currentEditingDay,
+                        index: index
+                    })
+                });
+
+                //削除が終わったら、一旦モーダルを閉じてリロード（一番確実な方法）
+                window.location.reload();
             }
         </script>
     </body>
