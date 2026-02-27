@@ -37,7 +37,7 @@ def read_root(request: Request, year: int = 2026, month: int = 2):
     # calendar.monthcalendar(年、月)を使って、指定された月のデータを生成
     cal = calendar.monthcalendar(year, month)
     
-    jp_holidays = holidays.Japan(years=year)
+    jp_holidays = holidays.Japan(years=year, language="ja")
     
     #曜日リスト(HTMLで表示する用)
     week_days = ["月", "火", "水", "木", "金", "土", "日"]
