@@ -27,6 +27,10 @@ def load_schedules():
 #初回起動時に読み込み
 schedules = load_schedules()
 
+#バラバラな順番で保存されているデータがあれば、起動時にソートし直す
+for date in schedules:
+    schedules[date].sort(key=lambda x: x.get("time", "23:59"))
+
 #データをファイルに保存する関数
 def save_to_file():
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -80,7 +84,7 @@ async def save_schedule_api(request: Request):
     #届いたデータ（タイトル、時間、メモ等）を丸ごと保存
     new_entry = {
         "title": data.get("title"),
-        "time": data.get("time"),
+        "time": data.get("time") if data.get("time") else "23:59", #時間未入力なら最後尾に
         "group_id": data.get("group_id"),
         "memo": data.get("memo"),
         "is_locked": data.get("is_locked", False)
@@ -93,6 +97,9 @@ async def save_schedule_api(request: Request):
         schedules[date_key] = [] #その日の予定リストが無い場合は作成する
     
     schedules[date_key].append(new_entry) #リストに予定を追加
+    
+    #timeを基準に並び替える
+    schedules[date_key].sort(key=lambda x: x["time"])
     
     #辞書を更新した後にファイルにも書き出す
     save_to_file()

@@ -97,7 +97,13 @@
                                                     white-space: nowrap;
                                                     overflow: hidden;
                                                     text-overflow: ellipsis;">
-                                            {{ item.time }} {{ item.title }}
+
+                                            <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
+                                            {% if item.time != "23:59" %}
+                                                {{ item.time }}
+                                            {% endif %}
+
+                                            {{ item.title }}
                                         </div>
                                     {% endfor %}
                                 {% endif %}
