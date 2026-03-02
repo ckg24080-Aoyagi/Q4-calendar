@@ -76,7 +76,15 @@ async def save_schedule_api(request: Request):
     year = data.get("year")
     month = data.get("month")
     day = data.get("day")
-    text = data.get("text")
+    
+    #届いたデータ（タイトル、時間、メモ等）を丸ごと保存
+    new_entry = {
+        "title": data.get("title"),
+        "time": data.get("time"),
+        "group_id": data.get("group_id"),
+        "memo": data.get("memo"),
+        "is_locked": data.get("is_locked", False)
+    }
     
     #2026-02-xx というキーで保存
     date_key = f"{year}-{int(month):02d}-{int(day):02d}"
@@ -84,7 +92,7 @@ async def save_schedule_api(request: Request):
     if date_key not in schedules:
         schedules[date_key] = [] #その日の予定リストが無い場合は作成する
     
-    schedules[date_key].append(text) #リストに予定を追加
+    schedules[date_key].append(new_entry) #リストに予定を追加
     
     #辞書を更新した後にファイルにも書き出す
     save_to_file()

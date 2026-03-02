@@ -85,8 +85,19 @@
                             <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;">
                                 {% if date_key in schedules %}
                                     {% for item in schedules[date_key] %}
-                                        <div style="border-bottom: 1px solid #eee; margin-bottom: 2px;">
-                                            ・{{ item }}
+                                        <!-- グループIDを使って、groupから色情報を取得する -->
+                                        {% set group_info = groups.get(item.group_id) %}
+                                        <!-- グループを設定していない場合のデフォルトの色を設定 -->
+                                        {% set bg_color = group_info.color if group_info else "#e0e0e0" %}
+                                        <div style="background-color: {{ bg_color }};
+                                                    color: white;
+                                                    padding: 2px 4px;
+                                                    border-radius: 3px;
+                                                    margin-bottom: 2px;
+                                                    white-space: nowrap;
+                                                    overflow: hidden;
+                                                    text-overflow: ellipsis;">
+                                            {{ item.time }} {{ item.title }}
                                         </div>
                                     {% endfor %}
                                 {% endif %}
@@ -113,8 +124,7 @@
             
             <hr>
             <div style="margin-top: 10px;">
-                <input type="text" id="schedule-input" placeholder="新しい予定を入力..." style="width: 80%;">
-                <button onclick="saveSchedule()">追加</button>
+                <button onclick="openDetailModal()">追加</button>
             </div>
 
             <button onclick="closeModal()" style="margin-top: 20px;">閉じる</button>
@@ -146,12 +156,53 @@
             </div>
         </div>
 
+        <!-- 詳細入力用モーダル_________________________________________________________________________________________________________ -->
+        <div id="detail-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 3000;">
+            <h3 id="detail-modal-title">予定の詳細入力</h3>
+
+            <div style="margin-bottom: 10px;">
+                <label>予定名：</label><br>
+                <input type="text" id="detail-title" style="width: 100%; padding: 5px;">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label>時間：</label><br>
+                <input type="time" id="detail-time" style="width: 100%; padding: 5px;">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label>グループ：</label><br>
+                <select id="detail-group" style="width: 100%; padding: 5px;">
+                    <option value="">グループなし</option>
+                    <!-- groups.jsonに保存されたグループ情報を、セレクトボックス(<option>)として自動的に生成 -->
+                    {% for gid, ginfo in groups.items() %}
+                        <option value="{{ gid }}">{{ ginfo.name}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label>メモ：</label><br>
+                <textarea id="detail-memo" style="width: 100%; height: 60px; padding: 5px;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 15px; border: 1px dashed #ccc; padding: 5px; color: #888; font-size: 0.8em;">
+                ※ロック機能（後ほど追加）
+            </div>
+
+            <div style="display: flex; justify-content: space-between;">
+                <button onclick="saveDetailSchedule()" style="background-color: #4caf50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px;">保存</button>
+                <button onclick="closeDetailModal()" style="background-color: #ccc; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px;">戻る</button>
+            </div>
+        </div>
+
         
         <script>
             const modal = document.getElementById('modal');
             const overlay = document.getElementById('overlay');
             const modalDate = document.getElementById('modal-date');
             const groupModal = document.getElementById('group-modal');
+            const detailModal = document.getElementById('detail-modal');
 
 
             //今どの日付を編集しているかを覚えておくための変数
@@ -359,7 +410,49 @@
                     window.location.reload(); //一覧に反映させるため、リロード
                 }
             }
-            //___________________________________________________________________________________________
+
+            //詳細入力モーダル_______________________________________________________________________________
+            function openDetailModal() {
+                detailModal.style.display = 'block';
+            }
+
+            function closeDetailModal() {
+                detailModal.style.display = 'none';
+            }
+
+            //予定を保存
+            async function saveDetailSchedule() {
+                const title = document.getElementById('detail-title').value;
+                const time = document.getElementById('detail-time').value;
+                const group = document.getElementById('detail-group').value;
+                const memo = document.getElementById('detail-memo').value;                
+            
+
+                if (!title) {
+                    alert("予定名を入力してください");
+                    return;
+                }
+
+                //サーバーに送るデータを「辞書（オブジェクト）」の形にする
+                const scheduleData = {
+                    year: currentYear,
+                    month: currentMonth,
+                    day: currentEditingDay,
+                    title: title,
+                    time: time,
+                    group_id: group,
+                    memo: memo,
+                    is_locked: false //ロック機"能、現段階では固定
+                };
+
+                await fetch("/save_schedule", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(scheduleData)
+                });
+
+                window.location.reload();
+            }
         </script>
     </body>
 </html>
