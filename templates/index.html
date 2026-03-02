@@ -192,14 +192,21 @@
                 <textarea id="detail-memo" style="width: 100%; height: 60px; padding: 5px;"></textarea>
             </div>
 
-            <div style="margin-bottom: 15px; border: 1px dashed #ccc; padding: 5px; color: #888; font-size: 0.8em;">
-                ※ロック機能（後ほど追加）
+            <div style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
+                <label style="cursor: pointer; font-weight: bold;">
+                    <input type="checkbox" id="detail-lock-toggle" onchange="togglePasswordField()">🔒予定をロックする
+
+                <div id="password-field-container" style="display: none; margin-top: 10px;">
+                    <label style="font-size: 0.8em; color: #666;">パスワードを設定：</label><br>
+                    <input type="password" id="detail-password" placeholder="数字4桁など" style="width: 100%; padding: 5px;">
+                </div>
             </div>
 
             <div style="display: flex; justify-content: space-between;">
                 <button onclick="saveDetailSchedule()" style="background-color: #4caf50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px;">保存</button>
                 <button onclick="closeDetailModal()" style="background-color: #ccc; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px;">戻る</button>
             </div>
+            
         </div>
 
         
@@ -426,16 +433,35 @@
                 detailModal.style.display = 'none';
             }
 
+            //パスワード欄の表示・非表示を切り替える
+            function togglePasswordField() {
+                const isLocked = document.getElementById('detail-lock-toggle').checked;
+                const container = document.getElementById('password-field-container');
+                container.style.display = isLocked ? 'block' : 'none';
+
+                //ロックを外した時はパスワード欄を空にする
+                if (!isLocked) {
+                    document.getElementById('detail-password').value = "";
+                }
+            }
+
             //予定を保存
             async function saveDetailSchedule() {
                 const title = document.getElementById('detail-title').value;
                 const time = document.getElementById('detail-time').value;
                 const group = document.getElementById('detail-group').value;
-                const memo = document.getElementById('detail-memo').value;                
-            
+                const memo = document.getElementById('detail-memo').value;
+
+                //ロック情報を取得
+                const isLocked = document.getElementById('detail-lock-toggle').checked;
+                const password = document.getElementById('detail-password').value;
 
                 if (!title) {
                     alert("予定名を入力してください");
+                    return;
+                }
+                if (isLocked && !password) {
+                    alert("パスワードを入力してください");
                     return;
                 }
 
@@ -448,7 +474,8 @@
                     time: time,
                     group_id: group,
                     memo: memo,
-                    is_locked: false //ロック機"能、現段階では固定
+                    is_locked: isLocked,
+                    password: password
                 };
 
                 await fetch("/save_schedule", {

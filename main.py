@@ -87,7 +87,8 @@ async def save_schedule_api(request: Request):
         "time": data.get("time") if data.get("time") else "23:59", #時間未入力なら最後尾に
         "group_id": data.get("group_id"),
         "memo": data.get("memo"),
-        "is_locked": data.get("is_locked", False)
+        "is_locked": data.get("is_locked", False),
+        "password": data.get("password", "")
     }
     
     #2026-02-xx というキーで保存
