@@ -119,12 +119,39 @@
 
             <button onclick="closeModal()" style="margin-top: 20px;">閉じる</button>
         </div>
+        
+
+        <br>
+        <button onclick="openGroupModal()" style="margin-bottom: 10px; background-color: #4caf50; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px;">
+            ＋　新規グループ作成
+        </button>
+
+        <div id="group-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2000;">
+            <h3>新規グループ作成</h3>
+            <div style="margin-bottom: 15px;">
+                <label>グループ名</label><br>
+                <input type="text" id="group-name" style="width: 100%; padding: 5px;" placeholder="例：仕事、プライベート">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>グループカラー：</label><br>
+                <input type="color" id="group-color" value="#ff0000" style="width: 100%; height: 40px; cursor: pointer;">
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <button onclick="saveGroup()" style="background-color: #4caf50; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px;">
+                    保存
+                </button>
+                <button onclick="closeGroupModal()" style="background-color: #ccc; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px;">
+                    キャンセル
+                </button>
+            </div>
+        </div>
 
         
         <script>
             const modal = document.getElementById('modal');
             const overlay = document.getElementById('overlay');
             const modalDate = document.getElementById('modal-date');
+            const groupModal = document.getElementById('group-modal');
 
 
             //今どの日付を編集しているかを覚えておくための変数
@@ -294,6 +321,45 @@
                 //削除が終わったら、一旦モーダルを閉じてリロード（一番確実な方法）
                 window.location.reload();
             }
+
+
+            //グループ機能________________________________________________________________________________
+
+            function openGroupModal() {
+                groupModal.style.display = 'block';
+                overlay.style.display = 'block'; //既存のオーバーレイを使いまわす
+            }
+
+            function closeGroupModal() {
+                groupModal.style.display = 'none';
+                if (modal.style.display === 'none') { //予定一覧モーダルも閉じていれば、オーバーレイを消す
+                    overlay.style.display = 'none';
+                }
+            }
+
+            async function saveGroup() {
+                const name = document.getElementById('group-name').value;
+                const color = document.getElementById('group-color').value;
+
+                if (!name) {
+                    alert("グループ名を入力してください");
+                    return;
+                }
+
+                const response = await fetch("/create_group", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ name: name, color: color })
+                });
+
+                if (response.ok) {
+                    alert("グループを作成しました！");
+                    document.getElementById('group-name').value = ""; //入力欄のクリア
+                    closeGroupModal();
+                    window.location.reload(); //一覧に反映させるため、リロード
+                }
+            }
+            //___________________________________________________________________________________________
         </script>
     </body>
 </html>

@@ -4,6 +4,7 @@ import calendar
 import holidays
 import json
 import os
+import time
 
 #FastAPI の app(アプリの本体) を作る
 app = FastAPI()
@@ -13,6 +14,8 @@ templates = Jinja2Templates(directory="templates")
 
 #スケジュール保存先のファイルパス
 DATA_FILE = "schedules.json"
+GROUP_FILE = "groups.json"
+groups = {}
 
 #起動時にファイルからデータを読み込む関数
 def load_schedules():
@@ -31,9 +34,20 @@ def save_to_file():
                                 # ↑ これがないと日本語が文字化けする
 
 
+#グループ機能
+#起動時にグループを読み込む
+if os.path.exists(GROUP_FILE):
+    with open(GROUP_FILE, "r", encoding="utf-8") as f:
+        groups = json.load(f)
+        
+def save_groups():
+    with open(GROUP_FILE, "w", encoding="utf-8") as f:
+        json.dump(groups, f, ensure_ascii=False, indent=4)
+        
+
 #ブラウザでトップページ(/)にアクセスしたときの動きを決める
 @app.get("/")
-def read_root(request: Request, year: int = 2026, month: int = 2):
+def read_root(request: Request, year: int = 2026, month: int = 3):
     # calendar.monthcalendar(年、月)を使って、指定された月のデータを生成
     cal = calendar.monthcalendar(year, month)
     
@@ -51,7 +65,8 @@ def read_root(request: Request, year: int = 2026, month: int = 2):
         "week_days": week_days,
         "cal": cal, # 2次元のリスト（リストの中にリストが入っている状態）を送る
         "jp_holidays": jp_holidays, #祝日データを送る
-        "schedules": schedules #schedule変数（保存済みデータ）もHTMLに送る
+        "schedules": schedules, #schedule変数（保存済みデータ）もHTMLに送る
+        "groups": groups
     })
     
 #スケジュールを受け取るためのルート
@@ -101,3 +116,18 @@ async def delete_schedule_api(request: Request):
             pass # 指定された番号がなければ何もしない
         
     return {"status": "success"}
+
+
+#グループ作成
+@app.post("/create_group")
+async def create_group_api(request: Request):
+    data = await request.json()
+    name = data.get("name")
+    color = data.get("color")
+    
+    #IDを自動生成 
+    group_id = f"group_{int(time.time())}"
+    groups[group_id] = {"name": name, "color":color}
+    
+    save_groups()
+    return {"status": "success", "group_id": group_id}
