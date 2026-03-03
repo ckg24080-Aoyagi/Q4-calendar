@@ -89,7 +89,15 @@
                                         {% set group_info = groups.get(item.group_id) %}
                                         <!-- グループを設定していない場合のデフォルトの色を設定 -->
                                         {% set bg_color = group_info.color if group_info else "#e0e0e0" %}
-                                        <div style="background-color: {{ bg_color }};
+
+                                        <!-- 表示部分を「データ属性付き(data-)」に改造。
+                                         　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
+                                        <div class="schedule-item"
+                                             data-title = "{{ item.title }}"
+                                             data-time = "{{ item.time }}"
+                                             data-locked = "{{ 'true' if item.is_locked else 'false' }}"
+                                             data-password = "{{ item.password }}"
+                                             style="background-color: {{ bg_color }};
                                                     color: white;
                                                     padding: 2px 4px;
                                                     border-radius: 3px;
@@ -98,12 +106,17 @@
                                                     overflow: hidden;
                                                     text-overflow: ellipsis;">
 
-                                            <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
-                                            {% if item.time != "23:59" %}
-                                                {{ item.time }}
-                                            {% endif %}
+                                            {% if item.is_locked %}
+                                                <span>🔒ロックされています</span>
+                                            {% else %}
 
-                                            {{ item.title }}
+                                                <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
+                                                {% if item.time != "23:59" %}
+                                                   {{ item.time }}
+                                                {% endif %}
+
+                                                {{ item.title }}
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 {% endif %}
