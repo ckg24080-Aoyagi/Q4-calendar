@@ -3,9 +3,10 @@
         {
             "title": "予定１３",
             "time": "08:00",
-            "group_id": "",
+            "group_id": "group_1772448941",
             "memo": "",
-            "is_locked": false
+            "is_locked": false,
+            "password": ""
         },
         {
             "title": "予定１０",
@@ -56,7 +57,7 @@
         {
             "title": "予定１９",
             "time": "13:00",
-            "group_id": "group_1772420835",
+            "group_id": "",
             "memo": "ロック中",
             "is_locked": true,
             "password": "3456"

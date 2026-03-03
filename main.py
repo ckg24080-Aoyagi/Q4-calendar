@@ -81,6 +81,8 @@ async def save_schedule_api(request: Request):
     month = data.get("month")
     day = data.get("day")
     
+    index = data.get("index") #indexが送られてきたら「編集」
+    
     #届いたデータ（タイトル、時間、メモ等）を丸ごと保存
     new_entry = {
         "title": data.get("title"),
@@ -94,10 +96,15 @@ async def save_schedule_api(request: Request):
     #2026-02-xx というキーで保存
     date_key = f"{year}-{int(month):02d}-{int(day):02d}"
     
-    if date_key not in schedules:
-        schedules[date_key] = [] #その日の予定リストが無い場合は作成する
+    if index is not None:
+        #編集モード：　指定された位置を上書き
+        schedules[date_key][index] = new_entry
+    else:
+        #新規作成モード：　末尾に追加
+        if date_key not in schedules:
+            schedules[date_key] = [] #その日の予定リストが無い場合は作成する
     
-    schedules[date_key].append(new_entry) #リストに予定を追加
+        schedules[date_key].append(new_entry) #リストに予定を追加
     
     #timeを基準に並び替える
     schedules[date_key].sort(key=lambda x: x["time"])

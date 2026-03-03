@@ -98,6 +98,7 @@
                                              data-locked = "{{ 'true' if item.is_locked else 'false' }}"
                                              data-password = "{{ item.password }}"
                                              data-memo = "{{ item.memo }}"
+                                             data-group-id = "{{ item.group_id }}"
                                              style="background-color: {{ bg_color }};
                                                     color: white;
                                                     padding: 2px 4px;
@@ -235,6 +236,8 @@
             //今どの日付を編集しているかを覚えておくための変数
             let currentEditingDay = 0;
 
+            let currentEditingIndex = null; //nullなら新規作成モード、数値なら編集モード
+
             //Pythonから渡された現在の年月をJS変数にセット
             let currentYear = {{ year }};
             let currentMonth = {{ month }};
@@ -265,6 +268,8 @@
                         const correctPassword = item.getAttribute('data-password');
                         const title = item.getAttribute('data-title');
                         const time = item.getAttribute('data-time');
+                        const groupId = item.getAttribute('data-group-id');
+                        const memo = item.getAttribute('data-memo')
 
                         const li = document.createElement('li');
                         li.style.display = "flex";
@@ -279,15 +284,24 @@
 
                         //クリックした時の処理
                         li.onclick = () => {
+                            const data = {
+                                title: title,
+                                time: time,
+                                group_id: groupId,
+                                memo: memo,
+                                is_locked: isLocked,
+                                password: correctPassword
+                            };
+
                             if (isLocked) {
                                 const inputPass = prompt("パスワードを入力してください");
                                 if (inputPass ===correctPassword) {
-                                    alert("認証成功！\n\n予定：" + title + "\n時間：" + (time === "23:59" ? "未設定" : time));
+                                    openDetailModal(i, data);
                                 } else {
                                     alert("パスワードが違います");
                                 }
                             } else {
-                                alert("予定：" + title + "\n時間：" + (time === "23:59" ? "未設定" : time));
+                                openDetailModal(i, data);
                             }
                         }
 
@@ -465,8 +479,33 @@
             }
 
             //詳細入力モーダル_______________________________________________________________________________
-            function openDetailModal() {
+            function openDetailModal(index= null, data = null) {
+                currentEditingIndex = index;
+
+                if (data) {
+                    //編集モード：　既存のデータをセット
+                    document.getElementById('detail-title').value = data.title;
+                    document.getElementById('detail-time').value = data.time === "23:59" ? "" : data.time;
+                    document.getElementById('detail-group').value = data.group_id;
+                    document.getElementById('detail-memo').value = data.memo;
+                    document.getElementById('detail-lock-toggle').checked = data.is_locked;
+                    document.getElementById('detail-password').value = data.password;
+                    togglePasswordField(); //パスワード欄の表示制御
+                    document.getElementById('detail-modal-title').innerText = "予定の編集";
+                } else {
+                    //新規モード：　入力欄を空にする
+                    document.getElementById('detail-title').value = "";
+                    document.getElementById('detail-time').value = "";
+                    document.getElementById('detail-group').value = "";
+                    document.getElementById('detail-memo').value = "";
+                    document.getElementById('detail-lock-toggle').checked = false;
+                    document.getElementById('detail-password').value = "";
+                    togglePasswordField();
+                    document.getElementById('detail-modal-title').innerText = "予定の新規作成";
+                }
+
                 detailModal.style.display = 'block';
+
             }
 
             function closeDetailModal() {
@@ -515,7 +554,8 @@
                     group_id: group,
                     memo: memo,
                     is_locked: isLocked,
-                    password: password
+                    password: password,
+                    index: currentEditingIndex
                 };
 
                 await fetch("/save_schedule", {
