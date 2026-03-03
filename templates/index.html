@@ -97,6 +97,7 @@
                                              data-time = "{{ item.time }}"
                                              data-locked = "{{ 'true' if item.is_locked else 'false' }}"
                                              data-password = "{{ item.password }}"
+                                             data-memo = "{{ item.memo }}"
                                              style="background-color: {{ bg_color }};
                                                     color: white;
                                                     padding: 2px 4px;
@@ -257,15 +258,38 @@
                 } else {
                     //マスの中にある予定を一つずつ取り出して、モーダル用のリストを作る
                     for (let i = 0; i < dayBoxSchedules.length; i++) {
+
+                        const item = dayBoxSchedules[i];
+                        //data-属性から情報を読み取る
+                        const isLocked = item.getAttribute('data-locked') === 'true';
+                        const correctPassword = item.getAttribute('data-password');
+                        const title = item.getAttribute('data-title');
+                        const time = item.getAttribute('data-time');
+
                         const li = document.createElement('li');
                         li.style.display = "flex";
                         li.style.justifyContent = "space-between";
                         li.style.padding = "8px 0";
                         li.style.borderBottom = "1px solid #eee";
+                        li.style.cursor = "pointer";
 
-                        //予定のテキスト
+                        //表示用のテキスト
                         const textSpan = document.createElement('span');
-                        textSpan.innerText = dayBoxSchedules[i].innerText;
+                        textSpan.innerText = isLocked ? "🔒ロックされています" : (time === "23:59" ? title : time + " " + title);
+
+                        //クリックした時の処理
+                        li.onclick = () => {
+                            if (isLocked) {
+                                const inputPass = prompt("パスワードを入力してください");
+                                if (inputPass ===correctPassword) {
+                                    alert("認証成功！\n\n予定：" + title + "\n時間：" + (time === "23:59" ? "未設定" : time));
+                                } else {
+                                    alert("パスワードが違います");
+                                }
+                            } else {
+                                alert("予定：" + title + "\n時間：" + (time === "23:59" ? "未設定" : time));
+                            }
+                        }
 
                         //削除ボタン
                         const delBtn = document.createElement('button');
@@ -275,7 +299,10 @@
                         delBtn.style.cursor = "pointer";
 
                         //ボタンが押されたらdeleteOne(何番目か)を実行
-                        delBtn.onclick = () => deleteOne(i);
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation(); //親要素(li)のクリックイベント(パスワード入力)が一緒に動くのを防ぐ
+                            deleteOne(i);
+                        };
 
                         li.appendChild(textSpan);
                         li.appendChild(delBtn);
