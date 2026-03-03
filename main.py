@@ -154,3 +154,22 @@ async def create_group_api(request: Request):
     
     save_groups()
     return {"status": "success", "group_id": group_id}
+
+
+@app.post("/delete_group")
+async def delete_group_api(request: Request):
+    data = await request.json()
+    gid = data.get("group_id")
+    
+    if gid in groups:
+        del groups[gid]
+        save_groups()
+        
+        #予定データ側にある group_id も掃除する
+        for date_key in schedules:
+            for item in schedules[date_key]:
+                if item.get("group_id") == gid:
+                    item["group_id"] = "" #グループなしにする
+        save_to_file()
+        
+    return {"status": "success"}

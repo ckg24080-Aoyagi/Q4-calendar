@@ -177,6 +177,17 @@
             </div>
         </div>
 
+        <button onclick="openGroupManageModal()" style="margin-bottom: 10px; background-color: #838383; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px;">
+            グループ管理
+        </button>
+
+        <div id="group-manage-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2500;">
+            <h3>グループの管理</h3>
+            <div id="group-list-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+                </div>
+            <button onclick="closeGroupManageModal()" style="width: 100%; padding: 10px; background: #ccc; border: none; border-radius: 5px;">閉じる</button>
+        </div>
+
         <!-- 詳細入力用モーダル_________________________________________________________________________________________________________ -->
         <div id="detail-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 3000;">
             <h3 id="detail-modal-title">予定の詳細入力</h3>
@@ -232,6 +243,9 @@
             const groupModal = document.getElementById('group-modal');
             const detailModal = document.getElementById('detail-modal');
 
+            //Pythonから渡されたgroupsデータをJSのオブジェクトとして保持
+            const allGroups = {{ groups | tojson }}; 
+                                //      ↑Python側にある辞書データを、そのままJavaScriptが読める形に変換して渡す
 
             //今どの日付を編集しているかを覚えておくための変数
             let currentEditingDay = 0;
@@ -564,6 +578,48 @@
                     body: JSON.stringify(scheduleData)
                 });
 
+                window.location.reload();
+            }
+
+        //グループ管理＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+
+            function openGroupManageModal() {
+                const container = document.getElementById('group-list-container');
+                container.innerHTML = "";
+
+                for (let gid in allGroups) {
+                    const g = allGroups[gid];
+                    const div = document.createElement('div');
+                    div.style.display = "flex";
+                    div.style.justifyContent = "space-between";
+                    div.style.alignItems = "center";
+                    div.style.padding = "5px";
+                    div.style.borderBottom = "1px solid #eee";
+
+                    div.innerHTML = `
+                        <span style="display:inline-block; width:15px; height:15px; background:${g.color}; margin-right:5px;"></span>
+                        <span style="flex-grow:1;">${g.name}</span>
+                        <button onclick="deleteGroup('${gid}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    `;
+                    container.appendChild(div);
+                }
+                document.getElementById('group-manage-modal').style.display = 'block';
+                overlay.style.display = 'block';
+            }
+
+            function closeGroupManageModal() {
+                document.getElementById('group-manage-modal').style.display = 'none';
+                overlay.style.display = 'none';
+            }
+
+            async function deleteGroup(gid) {
+                if (!confirm("このグループを削除しますか？\n(このグループに設定されていた予定は「グループなし」になります)")) return;
+
+                await fetch("/delete_group", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ group_id: gid })
+                });
                 window.location.reload();
             }
         </script>
