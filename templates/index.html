@@ -448,11 +448,35 @@
                 //Dateオブジェクトで「翌月の0日目」を指定すると、今月の最終日となる
                 const lastDayInMonth = new Date(currentYear, currentMonth, 0).getDate();
 
-                if (newDay < 1 || newDay > lastDayInMonth) {
-                    alert("月をまたぐ移動はカレンダーから選択してください");
+                if (newDay < 1) {
+                    //前の月の末日に移動したい場合
+                    let prevMonth = currentMonth - 1;
+                    let prevYear = currentYear;
+                    if (prevMonth < 1) {
+                        prevMonth = 12;
+                        prevYear--;
+                    }
+                    //移動先の月の最終日を確認
+                    const lastDayOfPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+
+                    //URLを書き換えて移動（移動先の日付情報を乗せる）
+                    window.location.href = `/?year=${prevYear}&month=${prevMonth}&open_day=${lastDayOfPrevMonth}`;
                     return;
                 }
 
+                if (newDay > lastDayInMonth) {
+                    //次の月の1日に移動したい場合
+                    let nextMonth = currentMonth + 1;
+                    let nextYear = currentYear;
+                    if (nextMonth >12) {
+                        nextMonth = 1;
+                        nextYear++;
+                    }
+                    window.location.href = `/?year=${nextYear}&month=${nextMonth}&open_day=1`;
+                    return;
+                }
+
+                //月内の移動の場合はモーダルを書き換えるのみ
                 currentEditingDay = newDay;
                 openModal(newDay);
             }
@@ -662,6 +686,17 @@
                     body: JSON.stringify({ group_id: gid })
                 });
                 window.location.reload();
+            }
+
+            window.onload = function() {
+                //URLのパラメータから'open_day'を探す
+                const urlParams = new URLSearchParams(window.location.search);
+                const openDay = urlParams.get('open_day');
+
+                if (openDay) {
+                    //指定された日があれば、その日のモーダルを開く
+                    openModal(parseInt(openDay));
+                }
             }
         </script>
     </body>
