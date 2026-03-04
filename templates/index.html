@@ -137,11 +137,14 @@
 
         <div id="overlay"></div>
 
-        <div id="modal" style="...">
-            <h3 id="modal-date"></h3>
+        <div id="modal" style="display: none; position: fixed; ...">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <button onclick="moveDay(-1)" style="border: none; background: none; cursor: pointer; font-size: 1.5em;">◀</button>
+                <h2 id="modal-date" style="margin: 0;"></h2>
+                <button onclick="moveDay(1)" style="border: none; background: none; cursor: pointer; font-size: 1.5em;">▶</button>
+            </div>
 
-            <ul id="modal-schedule-list" style="list-style: none; padding: 0; max-height: 200px; overflow-y: auto; text-align: left; margin-bottom: 20px;">    
-                </ul>
+            <ul id="modal-schedule-list" style="list-style: none; padding: 0;"></ul>
             
             <hr>
             <div style="margin-top: 10px;">
@@ -420,6 +423,7 @@
                 closeModal();
             }
 
+            //カレンダーの月の移動＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
             function changeMonth(diff) {
                 currentMonth += diff;
 
@@ -434,6 +438,23 @@
 
                 //新しい年月のURLに移動、ページがリロードされる
                 window.location.href = `/?year=${currentYear}&month=${currentMonth}`;
+            }
+
+            //予定一覧の日付の移動＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+            function moveDay(offset) {
+                let currentDay = parseInt(currentEditingDay);
+                let newDay = currentDay + offset;
+
+                //Dateオブジェクトで「翌月の0日目」を指定すると、今月の最終日となる
+                const lastDayInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+                if (newDay < 1 || newDay > lastDayInMonth) {
+                    alert("月をまたぐ移動はカレンダーから選択してください");
+                    return;
+                }
+
+                currentEditingDay = newDay;
+                openModal(newDay);
             }
 
             async function deleteOne(index) {
