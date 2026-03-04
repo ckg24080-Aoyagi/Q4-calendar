@@ -145,15 +145,18 @@ async def delete_schedule_api(request: Request):
 @app.post("/create_group")
 async def create_group_api(request: Request):
     data = await request.json()
+    gid = data.get("group_id")
     name = data.get("name")
     color = data.get("color")
     
-    #IDを自動生成 
-    group_id = f"group_{int(time.time())}"
-    groups[group_id] = {"name": name, "color":color}
+    if gid and gid in groups:
+        groups[gid] = {"name": name, "color": color}
+    else:
+        new_gid = f"group_{int(time.time())}"
+        groups[new_gid] = {"name": name, "color": color}
     
     save_groups()
-    return {"status": "success", "group_id": group_id}
+    return {"status": "success"}
 
 
 @app.post("/delete_group")

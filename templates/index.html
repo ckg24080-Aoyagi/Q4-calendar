@@ -88,7 +88,7 @@
                                         <!-- グループIDを使って、groupから色情報を取得する -->
                                         {% set group_info = groups.get(item.group_id) %}
                                         <!-- グループを設定していない場合のデフォルトの色を設定 -->
-                                        {% set bg_color = group_info.color if group_info else "#e0e0e0" %}
+                                        {% set bg_color = group_info.color if group_info else "#777" %}
 
                                         <!-- 表示部分を「データ属性付き(data-)」に改造。
                                          　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
@@ -181,7 +181,7 @@
             グループ管理
         </button>
 
-        <div id="group-manage-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2500;">
+        <div id="group-manage-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1900;">
             <h3>グループの管理</h3>
             <div id="group-list-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
                 </div>
@@ -250,7 +250,9 @@
             //今どの日付を編集しているかを覚えておくための変数
             let currentEditingDay = 0;
 
-            let currentEditingIndex = null; //nullなら新規作成モード、数値なら編集モード
+            //nullなら新規作成モード、数値なら編集モード
+            let currentEditingIndex = null;
+            let currentEditingGroupId = null;
 
             //Pythonから渡された現在の年月をJS変数にセット
             let currentYear = {{ year }};
@@ -457,9 +459,25 @@
 
             //グループ機能________________________________________________________________________________
 
-            function openGroupModal() {
+            function openGroupModal(gid = null) {
+                currentEditingGroupId = gid;
+                const nameInput = document.getElementById('group-name');
+                const colorInput = document.getElementById('group-color');
+                const titleElement = document.querySelector('#group-modal h3');
+
+                if (gid && allGroups[gid]) {
+                    //編集モード：　既存のデータをセット
+                    nameInput.value = allGroups[gid].name;
+                    colorInput.value = allGroups[gid].color;
+                    titleElement.innerText = "グループの編集"
+                } else {
+                    //新規作成モード：　空にする
+                    nameInput.value = "";
+                    colorInput.value = "ff0000";
+                    titleElement.innerText = "新規グループ作成"
+                }
+
                 groupModal.style.display = 'block';
-                overlay.style.display = 'block'; //既存のオーバーレイを使いまわす
             }
 
             function closeGroupModal() {
@@ -481,13 +499,14 @@
                 const response = await fetch("/create_group", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ name: name, color: color })
+                    body: JSON.stringify({
+                        group_id: currentEditingGroupId, //これを送る（nullなら新規）
+                        name: name,
+                        color: color
+                    })
                 });
 
                 if (response.ok) {
-                    alert("グループを作成しました！");
-                    document.getElementById('group-name').value = ""; //入力欄のクリア
-                    closeGroupModal();
                     window.location.reload(); //一覧に反映させるため、リロード
                 }
             }
@@ -599,6 +618,7 @@
                     div.innerHTML = `
                         <span style="display:inline-block; width:15px; height:15px; background:${g.color}; margin-right:5px;"></span>
                         <span style="flex-grow:1;">${g.name}</span>
+                        <button onclick="openGroupModal('${gid}')" style="margin-right:5px; border:none; background:none; cursor:pointer;">✏️</button>
                         <button onclick="deleteGroup('${gid}')" style="background:none; border:none; cursor:pointer;">🗑️</button>
                     `;
                     container.appendChild(div);
