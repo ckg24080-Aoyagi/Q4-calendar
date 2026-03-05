@@ -240,6 +240,7 @@
 
         
         <script>
+
             const modal = document.getElementById('modal');
             const overlay = document.getElementById('overlay');
             const modalDate = document.getElementById('modal-date');
@@ -250,6 +251,10 @@
             const allGroups = {{ groups | tojson }}; 
                                 //      ↑Python側にある辞書データを、そのままJavaScriptが読める形に変換して渡す
 
+            //Pythonから渡された現在の年月をJS変数にセット
+            let currentYear = {{ year }};
+            let currentMonth = {{ month }};
+
             //今どの日付を編集しているかを覚えておくための変数
             let currentEditingDay = 0;
 
@@ -257,11 +262,11 @@
             let currentEditingIndex = null;
             let currentEditingGroupId = null;
 
-            //Pythonから渡された現在の年月をJS変数にセット
-            let currentYear = {{ year }};
-            let currentMonth = {{ month }};
 
-            // Modalを開く
+        //========================================================================================================================
+        //モーダル制御（開く・閉じる）
+        //========================================================================================================================
+
             async function openModal(day) {
                 if (day === '0') return
                 currentEditingDay = day; //ここで記録
@@ -347,216 +352,14 @@
                 overlay.style.display = 'block';
             }
 
-            //Modalを閉じる
             function closeModal() {
                 modal.style.display = 'none';
                 overlay.style.display = 'none';
             }
 
-            //保存ボタン（現段階ではアラートを出すのみ）
-            async function saveSchedule() {
-                //入力された文字の読み取り
-                const text = document.getElementById('schedule-input').value;
-                
-                //今何日を編集しているかを取得
-                const day = currentEditingDay;
-
-                if (!text) return
-
-                //サーバーに送る
-                await fetch("/save_schedule", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    //dayだけではなくyearとmonthも一緒に送るようにする
-                    body: JSON.stringify({
-                        year: currentYear,
-                        month: currentMonth,
-                        day: day,
-                        text: text })
-                });
-
-                //修正：元々「上書き(innerText = text)」だったものを「追加(appendChild)」に変更
-                const scheduleBox = document.getElementById('schedule-' + day);
-
-                //新しい予定用の小さな箱(div)を作って追加、openmodalが読み取れるように<div>タグで囲って追加する
-                const newEntry = document.createElement('div');
-                newEntry.style.borderBottom = "1px solid #eee";
-                newEntry.style.marginBottom = "2px";
-                newEntry.innerText = "・" + text;
-
-                scheduleBox.appendChild(newEntry);
-
-
-                document.getElementById('schedule-input').value = "";
-                closeModal();
-            }
-
-            async function deleteSchedule(){
-                const day = currentEditingDay;
-
-                //削除確認ダイアログの表示
-                //confirm = 「OK」を押すとtrue、「キャンセル」を押すとfalseを返す
-                const result = confirm(day + "日の予定を削除してもよろしいですか？");
-
-                if (!result) { //結果がtrueでない場合 ( キャンセルされた場合 )
-                    return; //キャンセルを押されたら処理を終了、何もしない
-                }
-
-                //サーバーに削除を依頼
-                await fetch("/delete_schedule", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    //削除するときも「どの年月か」を伝える
-                    body: JSON.stringify({
-                        year: currentYear,
-                        month: currentMonth,
-                        day: day 
-                    })
-                });
-
-                //画面上の表示も消す
-                const scheduleBox = document.getElementById('schedule-' +day);
-                scheduleBox.innerText = "";
-
-                //入力欄も空にして閉じる
-                document.getElementById('schedule-input').value = "";
-                closeModal();
-            }
-
-            //カレンダーの月の移動＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
-            function changeMonth(diff) {
-                currentMonth += diff;
-
-                //13月になった場合は翌年の1月に、0月になったら前年の12月に調整する
-                if (currentMonth > 12) {
-                    currentMonth = 1;
-                    currentYear ++;
-                } else if (currentMonth < 1) {
-                    currentMonth = 12;
-                    currentYear --;
-                }
-
-                //新しい年月のURLに移動、ページがリロードされる
-                window.location.href = `/?year=${currentYear}&month=${currentMonth}`;
-            }
-
-            //予定一覧の日付の移動＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
-            function moveDay(offset) {
-                let currentDay = parseInt(currentEditingDay);
-                let newDay = currentDay + offset;
-
-                //Dateオブジェクトで「翌月の0日目」を指定すると、今月の最終日となる
-                const lastDayInMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-                if (newDay < 1) {
-                    //前の月の末日に移動したい場合
-                    let prevMonth = currentMonth - 1;
-                    let prevYear = currentYear;
-                    if (prevMonth < 1) {
-                        prevMonth = 12;
-                        prevYear--;
-                    }
-                    //移動先の月の最終日を確認
-                    const lastDayOfPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-
-                    //URLを書き換えて移動（移動先の日付情報を乗せる）
-                    window.location.href = `/?year=${prevYear}&month=${prevMonth}&open_day=${lastDayOfPrevMonth}`;
-                    return;
-                }
-
-                if (newDay > lastDayInMonth) {
-                    //次の月の1日に移動したい場合
-                    let nextMonth = currentMonth + 1;
-                    let nextYear = currentYear;
-                    if (nextMonth >12) {
-                        nextMonth = 1;
-                        nextYear++;
-                    }
-                    window.location.href = `/?year=${nextYear}&month=${nextMonth}&open_day=1`;
-                    return;
-                }
-
-                //月内の移動の場合はモーダルを書き換えるのみ
-                currentEditingDay = newDay;
-                openModal(newDay);
-            }
-
-            async function deleteOne(index) {
-                if (!confirm("この予定を削除しますか？")) return;
-
-                await fetch("/delete_schedule", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        year: currentYear,
-                        month: currentMonth,
-                        day: currentEditingDay,
-                        index: index
-                    })
-                });
-
-                //削除が終わったら、一旦モーダルを閉じてリロード（一番確実な方法）
-                window.location.reload();
-            }
-
-
-            //グループ機能________________________________________________________________________________
-
-            function openGroupModal(gid = null) {
-                currentEditingGroupId = gid;
-                const nameInput = document.getElementById('group-name');
-                const colorInput = document.getElementById('group-color');
-                const titleElement = document.querySelector('#group-modal h3');
-
-                if (gid && allGroups[gid]) {
-                    //編集モード：　既存のデータをセット
-                    nameInput.value = allGroups[gid].name;
-                    colorInput.value = allGroups[gid].color;
-                    titleElement.innerText = "グループの編集"
-                } else {
-                    //新規作成モード：　空にする
-                    nameInput.value = "";
-                    colorInput.value = "ff0000";
-                    titleElement.innerText = "新規グループ作成"
-                }
-
-                groupModal.style.display = 'block';
-            }
-
-            function closeGroupModal() {
-                groupModal.style.display = 'none';
-                if (modal.style.display === 'none') { //予定一覧モーダルも閉じていれば、オーバーレイを消す
-                    overlay.style.display = 'none';
-                }
-            }
-
-            async function saveGroup() {
-                const name = document.getElementById('group-name').value;
-                const color = document.getElementById('group-color').value;
-
-                if (!name) {
-                    alert("グループ名を入力してください");
-                    return;
-                }
-
-                const response = await fetch("/create_group", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({
-                        group_id: currentEditingGroupId, //これを送る（nullなら新規）
-                        name: name,
-                        color: color
-                    })
-                });
-
-                if (response.ok) {
-                    window.location.reload(); //一覧に反映させるため、リロード
-                }
-            }
 
             //詳細入力モーダル_______________________________________________________________________________
+ 
             function openDetailModal(index= null, data = null) {
                 currentEditingIndex = index;
 
@@ -590,17 +393,48 @@
                 detailModal.style.display = 'none';
             }
 
-            //パスワード欄の表示・非表示を切り替える
-            function togglePasswordField() {
-                const isLocked = document.getElementById('detail-lock-toggle').checked;
-                const container = document.getElementById('password-field-container');
-                container.style.display = isLocked ? 'block' : 'none';
 
-                //ロックを外した時はパスワード欄を空にする
-                if (!isLocked) {
-                    document.getElementById('detail-password').value = "";
+            //グループモーダル＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+    
+            function openGroupModal(gid = null) {
+                currentEditingGroupId = gid;
+                const nameInput = document.getElementById('group-name');
+                const colorInput = document.getElementById('group-color');
+                const titleElement = document.querySelector('#group-modal h3');
+
+                if (gid && allGroups[gid]) {
+                    //編集モード：　既存のデータをセット
+                    nameInput.value = allGroups[gid].name;
+                    colorInput.value = allGroups[gid].color;
+                    titleElement.innerText = "グループの編集"
+                } else {
+                    //新規作成モード：　空にする
+                    nameInput.value = "";
+                    colorInput.value = "ff0000";
+                    titleElement.innerText = "新規グループ作成"
+                }
+
+                groupModal.style.display = 'block';
+            }
+
+            function closeGroupModal() {
+                groupModal.style.display = 'none';
+                if (modal.style.display === 'none') { //予定一覧モーダルも閉じていれば、オーバーレイを消す
+                    overlay.style.display = 'none';
                 }
             }
+
+
+            //全てのモーダルを一斉に閉じる関数
+            function closeAllModals() {
+                document.querySelectorAll('[id$="-modal"], #modal').forEach(m => m.style.display = 'none');
+                overlay.style.display = 'none';
+            }
+
+
+        //========================================================================================================================
+        //予定（Schesule）操作
+        //========================================================================================================================
 
             //予定を保存
             async function saveDetailSchedule() {
@@ -645,8 +479,139 @@
                 window.location.reload();
             }
 
-        //グループ管理＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+            //パスワード欄の表示・非表示を切り替える
+            function togglePasswordField() {
+                const isLocked = document.getElementById('detail-lock-toggle').checked;
+                const container = document.getElementById('password-field-container');
+                container.style.display = isLocked ? 'block' : 'none';
 
+                //ロックを外した時はパスワード欄を空にする
+                if (!isLocked) {
+                    document.getElementById('detail-password').value = "";
+                }
+            }
+
+
+            async function deleteOne(index) {
+                if (!confirm("この予定を削除しますか？")) return;
+
+                await fetch("/delete_schedule", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        year: currentYear,
+                        month: currentMonth,
+                        day: currentEditingDay,
+                        index: index
+                    })
+                });
+
+                //削除が終わったら、一旦モーダルを閉じてリロード（一番確実な方法）
+                window.location.reload();
+            }
+
+
+            //予定一覧の日付の移動
+            function moveDay(offset) {
+                let currentDay = parseInt(currentEditingDay);
+                let newDay = currentDay + offset;
+
+                //Dateオブジェクトで「翌月の0日目」を指定すると、今月の最終日となる
+                const lastDayInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+                if (newDay < 1) {
+                    //前の月の末日に移動したい場合
+                    let prevMonth = currentMonth - 1;
+                    let prevYear = currentYear;
+                    if (prevMonth < 1) {
+                        prevMonth = 12;
+                        prevYear--;
+                    }
+                    //移動先の月の最終日を確認
+                    const lastDayOfPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+
+                    //URLを書き換えて移動（移動先の日付情報を乗せる）
+                    window.location.href = `/?year=${prevYear}&month=${prevMonth}&open_day=${lastDayOfPrevMonth}`;
+                    return;
+                }
+
+                if (newDay > lastDayInMonth) {
+                    //次の月の1日に移動したい場合
+                    let nextMonth = currentMonth + 1;
+                    let nextYear = currentYear;
+                    if (nextMonth >12) {
+                        nextMonth = 1;
+                        nextYear++;
+                    }
+                    window.location.href = `/?year=${nextYear}&month=${nextMonth}&open_day=1`;
+                    return;
+                }
+
+                //月内の移動の場合はモーダルを書き換えるのみ
+                currentEditingDay = newDay;
+                openModal(newDay);
+            }
+
+            //カレンダーの月の移動＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+            function changeMonth(diff) {
+                currentMonth += diff;
+
+                //13月になった場合は翌年の1月に、0月になったら前年の12月に調整する
+                if (currentMonth > 12) {
+                    currentMonth = 1;
+                    currentYear ++;
+                } else if (currentMonth < 1) {
+                    currentMonth = 12;
+                    currentYear --;
+                }
+
+                //新しい年月のURLに移動、ページがリロードされる
+                window.location.href = `/?year=${currentYear}&month=${currentMonth}`;
+            }
+
+            
+        //========================================================================================================================
+        //グループ（Group）操作
+        //========================================================================================================================
+
+            async function saveGroup() {
+                const name = document.getElementById('group-name').value;
+                const color = document.getElementById('group-color').value;
+
+                if (!name) {
+                    alert("グループ名を入力してください");
+                    return;
+                }
+
+                const response = await fetch("/create_group", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        group_id: currentEditingGroupId, //これを送る（nullなら新規）
+                        name: name,
+                        color: color
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.reload(); //一覧に反映させるため、リロード
+                }
+            }
+
+            async function deleteGroup(gid) {
+                if (!confirm("このグループを削除しますか？\n(このグループに設定されていた予定は「グループなし」になります)")) return;
+
+                await fetch("/delete_group", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ group_id: gid })
+                });
+                window.location.reload();
+            }
+           
+            //グループ管理
             function openGroupManageModal() {
                 const container = document.getElementById('group-list-container');
                 container.innerHTML = "";
@@ -677,17 +642,11 @@
                 overlay.style.display = 'none';
             }
 
-            async function deleteGroup(gid) {
-                if (!confirm("このグループを削除しますか？\n(このグループに設定されていた予定は「グループなし」になります)")) return;
 
-                await fetch("/delete_group", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ group_id: gid })
-                });
-                window.location.reload();
-            }
-
+        //========================================================================================================================
+        //初期化処理
+        //========================================================================================================================
+        
             window.onload = function() {
                 //URLのパラメータから'open_day'を探す
                 const urlParams = new URLSearchParams(window.location.search);
@@ -698,6 +657,7 @@
                     openModal(parseInt(openDay));
                 }
             }
+
         </script>
     </body>
 </html>

@@ -21,17 +21,7 @@
         {
             "title": "予定２",
             "time": "23:59",
-            "group_id": "group_1772586080",
-            "memo": "",
-            "is_locked": false,
-            "password": ""
-        }
-    ],
-    "2026-03-04": [
-        {
-            "title": "予定３",
-            "time": "23:59",
-            "group_id": "",
+            "group_id": "group_1772591688",
             "memo": "",
             "is_locked": false,
             "password": ""
@@ -45,6 +35,16 @@
             "memo": "",
             "is_locked": false,
             "password": ""
+        }
+    ],
+    "2026-03-04": [
+        {
+            "title": "予定１０",
+            "time": "09:08",
+            "group_id": "group_1772586080",
+            "memo": "",
+            "is_locked": true,
+            "password": "334"
         }
     ]
 }
