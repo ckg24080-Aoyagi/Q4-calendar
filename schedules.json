@@ -46,5 +46,25 @@
             "is_locked": true,
             "password": "334"
         }
+    ],
+    "2026-03-06": [
+        {
+            "title": "予定１３",
+            "time": "23:59",
+            "group_id": "",
+            "memo": "",
+            "is_locked": false,
+            "password": ""
+        }
+    ],
+    "2026-03-10": [
+        {
+            "title": "予定３",
+            "time": "12:00",
+            "group_id": "group_1772764017",
+            "memo": "",
+            "is_locked": false,
+            "password": ""
+        }
     ]
 }

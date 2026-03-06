@@ -36,10 +36,10 @@
     
     <body>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <button onclick="changeMonth(-1)">← 前の月</button>
+            <button onclick="changeMonth(-1)">◀</button>
              <!-- ↓Python側から送ったデータをはめ込むことができる　-->
             <h2>{{title}}</h2>
-            <button onclick="changeMonth(1)">次の月 →</button>
+            <button onclick="changeMonth(1)">▶</button>
         </div>
         
         <div class="calendar-grid">
@@ -109,7 +109,7 @@
                                                     text-overflow: ellipsis;">
 
                                             {% if item.is_locked %}
-                                                <span>🔒ロックされています</span>
+                                                <span>🔒ロック中</span>
                                             {% else %}
 
                                                 <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
@@ -270,7 +270,7 @@
             async function openModal(day) {
                 if (day === '0') return
                 currentEditingDay = day; //ここで記録
-                modalDate.innerText = currentYear + "年 " + currentMonth + "月 " + day + " 日の予定一覧";
+                document.getElementById('modal-date').innerText = `${currentMonth}/${day}の予定`;
 
                 //モーダル無いのリストを一度空にする
                 const modalList = document.getElementById('modal-schedule-list');
@@ -297,10 +297,19 @@
 
                         const li = document.createElement('li');
                         li.style.display = "flex";
-                        li.style.justifyContent = "space-between";
-                        li.style.padding = "8px 0";
+                        li.style.alignItems = "center";
+                        li.style.padding = "8px";
                         li.style.borderBottom = "1px solid #eee";
                         li.style.cursor = "pointer";
+
+                        //グループカラーを表示するチップ作成、カレンダー上の要素から背景色を持ってくる
+                        const colorChip = document.createElement('div');
+                        colorChip.style.width = "12px";
+                        colorChip.style.height = "12px";
+                        colorChip.style.borderRadius = "50%"; //丸くする
+                        colorChip.style.backgroundColor = item.style.backgroundColor; //カレンダーの色を継承
+                        colorChip.style.marginRight = "10px";
+                        colorChip.style.flexShrink = "0"; //タイトルが長くなった時に、色の丸が押しつぶされて楕円形にならないようにする
 
                         //表示用のテキスト
                         const textSpan = document.createElement('span');
@@ -342,8 +351,9 @@
                             deleteOne(i);
                         };
 
+                        li.appendChild(colorChip);
                         li.appendChild(textSpan);
-                        li.appendChild(delBtn);
+                        li.appendChild(delBtn);             
                         modalList.appendChild(li);
                     }
                 }
