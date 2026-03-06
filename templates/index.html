@@ -341,14 +341,40 @@
                         //削除ボタン
                         const delBtn = document.createElement('button');
                         delBtn.innerText = "❌";
-                        delBtn.style.backgroundColor = "transparent";
-                        delBtn.style.border = "none";
+                        delBtn.style.marginLeft = "10px";
                         delBtn.style.cursor = "pointer";
+                        delBtn.style.border = "none";
+                        delBtn.style.background = "none";
 
                         //ボタンが押されたらdeleteOne(何番目か)を実行
                         delBtn.onclick = (e) => {
                             e.stopPropagation(); //親要素(li)のクリックイベント(パスワード入力)が一緒に動くのを防ぐ
-                            deleteOne(i);
+
+                            //削除前のチェックロジック
+                            const isLocked = item.getAttribute('data-locked') === 'true';
+                            const correctPassword = item.getAttribute('data-password');
+
+                            if (isLocked) {
+                                //ロックされている場合：　パスワード入力を行う
+                                const inputPass = prompt("この予定はロックされています。削除するにはパスワードを入力してください：");
+
+                                //キャンセルされた場合
+                                if (inputPass === null) return;
+
+                                //認証成功なら削除実行
+                                if (inputPass === correctPassword) {
+                                    if (confirm("本当に削除してもよろしいですか？")) {
+                                        deleteOne(i);
+                                    }
+                                } else {
+                                    alert("パスワードが違います。削除できません。");
+                                }
+                            } else {
+                                //ロックされていない場合：　通常確認のみ
+                                if (confirm("この予定を削除しますか？")) {
+                                    deleteOne(i);
+                                }
+                            }
                         };
 
                         li.appendChild(colorChip);
@@ -503,8 +529,6 @@
 
 
             async function deleteOne(index) {
-                if (!confirm("この予定を削除しますか？")) return;
-
                 await fetch("/delete_schedule", {
                     method: "POST",
                     headers: {
