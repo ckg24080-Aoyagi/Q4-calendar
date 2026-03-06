@@ -30,6 +30,27 @@
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                 background-color: rgba(0,0,0,0,5); z-index: 999;
             }
+        /* ====今日の日付を強調するスタイル========================= */
+            .day-box.today {
+                background-color: #fffde7;
+                border: 2px solid #ffd600;
+                position: relative;
+            }
+            /* 今日の数字を丸いバッジにする */
+            .day-box.today .day-number {
+                display: inline-block;
+                background-color: #ffd600;
+                color: #333;
+                padding: 2px 6px;
+                border-radius: 50%;
+                font-weight: bold;
+            }
+            .day-number {
+                font-weight: bold;
+                margin-bottom: 5px;
+                display: block;
+            }
+        /* ======================================================== */
         </style>
     </head>
 
@@ -51,13 +72,16 @@
                 </div>
             {% endfor %}
 
-            <!-- 日付の表示 -->
+    <!--====日付の表示=========================================================================================================-->
             {% for week in cal %}
                 {% for day in week %}
 
                     <!-- まず「祝日ではない」と決めておく -->
                     {% set is_holiday = False %}
                     {% set holiday_name = "" %}
+
+                    <!-- 今日の判定ロジック -->
+                     {% set is_today = (year == today_year and month == today_month and day == today_day) %}
 
                     <!-- dayが0から大きい場合(正しい日付)のみ計算を行う -->
                     <!-- その日が祝日かどうかのチェック(2026-02-xxの形式で) -->
@@ -70,59 +94,55 @@
                     {% endif %}
 
 
-                    <div class="day-box" style="cursor: pointer;" onclick="openModal('{{ day }}')">
-                        <span class="{% if loop.index0 == 5 %}sat{% elif loop.index0 == 6 %}sun-holiday{% elif is_holiday %}sun-holiday{% endif %}">
-                            {% if day != 0 %}
+                    <div class="day-box {{ 'today' if is_today else '' }}"
+                         style="cursor: pointer; min-height: 80px;"
+                         onclick="openModal('{{ day }}')">
+
+                        {% if day != 0 %}
+                            <!-- 日付の数字部分 -->
+                            <span class="day-number {% if loop.index0 == 5 %}sat{% elif loop.index0 == 6 %}sun-holiday{% elif is_holiday %}sun-holiday{% endif %}">
                                 {{ day }}
-                            {% endif %}
-                        </span>
+                            </span>
 
-                        <!-- 日付の部分にスケジュールを表示させるための空の箱を用意 -->
-                        <!-- 保存された予定があれば表示させる -->
-                        {% if day > 0 %}
+                        <!-- スケジュール表示部分 -->
+                        <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555;">
                             {% set date_key = "%04d-%02d-%02d" | format(year, month, day) %}
+   
+                            {% if date_key in schedules %}
+                                {% for item in schedules[date_key] %}
+                                    <!-- グループIDを使って、groupから色情報を取得する -->
+                                    {% set group_info = groups.get(item.group_id) %}
+                                    <!-- グループを設定していない場合のデフォルトの色を設定 -->
+                                    {% set bg_color = group_info.color if group_info else "#777" %}
 
-                            <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; margin-top: 5px;">
-                                {% if date_key in schedules %}
-                                    {% for item in schedules[date_key] %}
-                                        <!-- グループIDを使って、groupから色情報を取得する -->
-                                        {% set group_info = groups.get(item.group_id) %}
-                                        <!-- グループを設定していない場合のデフォルトの色を設定 -->
-                                        {% set bg_color = group_info.color if group_info else "#777" %}
+                                    <!-- 表示部分を「データ属性付き(data-)」に改造。
+                                     　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
+                                    <div class="schedule-item"
+                                         data-title = "{{ item.title }}"
+                                         data-time = "{{ item.time }}"
+                                         data-locked = "{{ 'true' if item.is_locked else 'false' }}"
+                                         data-password = "{{ item.password }}"
+                                         data-memo = "{{ item.memo }}"
+                                         data-group-id = "{{ item.group_id }}"
+                                         style="background-color: {{ bg_color }};
+                                                color: white;
+                                                padding: 2px 4px;
+                                                border-radius: 3px;
+                                                margin-bottom: 2px;
+                                                white-space: nowrap;
+                                                overflow: hidden;
+                                                text-overflow: ellipsis;">
 
-                                        <!-- 表示部分を「データ属性付き(data-)」に改造。
-                                         　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
-                                        <div class="schedule-item"
-                                             data-title = "{{ item.title }}"
-                                             data-time = "{{ item.time }}"
-                                             data-locked = "{{ 'true' if item.is_locked else 'false' }}"
-                                             data-password = "{{ item.password }}"
-                                             data-memo = "{{ item.memo }}"
-                                             data-group-id = "{{ item.group_id }}"
-                                             style="background-color: {{ bg_color }};
-                                                    color: white;
-                                                    padding: 2px 4px;
-                                                    border-radius: 3px;
-                                                    margin-bottom: 2px;
-                                                    white-space: nowrap;
-                                                    overflow: hidden;
-                                                    text-overflow: ellipsis;">
-
-                                            {% if item.is_locked %}
-                                                <span>🔒ロック中</span>
-                                            {% else %}
-
-                                                <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
-                                                {% if item.time != "23:59" %}
-                                                   {{ item.time }}
-                                                {% endif %}
-
-                                                {{ item.title }}
-                                            {% endif %}
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
+                                        {% if item.is_locked %}
+                                            <span>🔒ロック中</span>
+                                        {% else %}
+                                            <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
+                                            {{ item.time if item.time != "23:59" else "" }} {{ item.title }}
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
 
                         <!-- 祝日名の表示 -->
                             {% if is_holiday %}

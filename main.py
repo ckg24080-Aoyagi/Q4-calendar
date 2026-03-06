@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 import calendar
 import holidays
 import json
 import os
 import time
+from datetime import datetime
 
 #FastAPI の app(アプリの本体) を作る
 app = FastAPI()
@@ -50,15 +52,20 @@ def save_groups():
         
 
 #ブラウザでトップページ(/)にアクセスしたときの動きを決める
-@app.get("/")
-def read_root(request: Request, year: int = 2026, month: int = 3):
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request, year: int = None, month: int = None):
     # calendar.monthcalendar(年、月)を使って、指定された月のデータを生成
-    cal = calendar.monthcalendar(year, month)
     
     jp_holidays = holidays.Japan(years=year, language="ja")
     
     #曜日リスト(HTMLで表示する用)
     week_days = ["月", "火", "水", "木", "金", "土", "日"]
+    
+    now = datetime.now()
+    if year is None: year = now.year
+    if month is None: month = now.month
+    
+    cal = calendar.monthcalendar(year, month)
     
     #予定データのキーを月ごとに判定しやすくするために年、月もHTMLに渡す
     return templates.TemplateResponse("index.html",{
@@ -66,6 +73,9 @@ def read_root(request: Request, year: int = 2026, month: int = 3):
         "title": f"{year}年 {month}月",
         "year": year,
         "month": month,
+        "today_year": now.year,
+        "today_month": now.month,
+        "today_day": now.day,
         "week_days": week_days,
         "cal": cal, # 2次元のリスト（リストの中にリストが入っている状態）を送る
         "jp_holidays": jp_holidays, #祝日データを送る
