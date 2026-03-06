@@ -17,8 +17,25 @@
             .sat{
                 color: blue;
             }
+            .day-box.sat-bg {
+                background-color: #e3f2fd;
+            }
             .sun-holiday{
-                color: red;
+                color: red !important;
+            }
+            .day-box.sun-holiday-bg {
+                background-color: #ffebee;
+            }
+            .holiday-label {
+                font-size: 0.65em;
+                color: #d32f2f;
+                font-weight: 500;
+                line-height: 1.1;
+                margin-top: 2px;
+                display: block; /*改行して表示*/
+                overflow: hidden;
+                text-overflow: ellipsis; /*長すぎる祝日名は「...」にする*/
+                white-space: nowrap;
             }
             #modal{ /*スケジュール入力用のポップアップ（最初は隠しておく）*/
                 display: none;
@@ -31,9 +48,9 @@
                 background-color: rgba(0,0,0,0,5); z-index: 999;
             }
         /* ====今日の日付を強調するスタイル========================= */
-            .day-box.today {
-                background-color: #fffde7;
-                border: 2px solid #ffd600;
+            .day-box.today {            /*祝日と今日が重なった場合、今日の色を優先する*/
+                background-color: #fffde7 !important;
+                border: 2px solid #ffd600 !important;
                 position: relative;
             }
             /* 今日の数字を丸いバッジにする */
@@ -93,63 +110,69 @@
                         {% endif %}
                     {% endif %}
 
+                    {% set is_sat = (loop.index0 == 5) %}
+                    {% set is_sun_or_holiday = (loop.index0 == 6 or is_holiday) %}
 
-                    <div class="day-box {{ 'today' if is_today else '' }}"
-                         style="cursor: pointer; min-height: 80px;"
+                    <div class="day-box {{ 'today' if is_today else '' }}
+                                        {{ 'sat-bg' if is_sat else '' }}
+                                        {{ 'sun-holiday-bg' if is_sun_or_holiday else '' }}"
+                         style="cursor: pointer; min-height: 90px; display: flex; flex-direction: column;"
                          onclick="openModal('{{ day }}')">
 
                         {% if day != 0 %}
-                            <!-- 日付の数字部分 -->
-                            <span class="day-number {% if loop.index0 == 5 %}sat{% elif loop.index0 == 6 %}sun-holiday{% elif is_holiday %}sun-holiday{% endif %}">
-                                {{ day }}
-                            </span>
+                            <div style="text-align: left; margin-bottom: 4px;">
+                                <!-- 日付の数字部分 -->
+                                <span class="day-number {{ 'sat' if is_sat else '' }} {{ 'sun-holiday' if is_sun_or_holiday else '' }}">
+                                    {{ day }}
+                                </span>
 
-                        <!-- スケジュール表示部分 -->
-                        <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555;">
-                            {% set date_key = "%04d-%02d-%02d" | format(year, month, day) %}
+                                <!-- 祝日名の表示 -->
+                                {% if is_holiday %}
+                                    <span class="holiday-label">{{ holiday_name }}</span>
+                                {% endif %}
+                            </div>
+                        
+
+                            <!-- スケジュール表示部分 -->
+                            <div id="schedule-{{ day }}" style="font-size: 0.7em; color: #555; flex-grow: 1;">
+                                {% set date_key = "%04d-%02d-%02d" | format(year, month, day) %}
    
-                            {% if date_key in schedules %}
-                                {% for item in schedules[date_key] %}
-                                    <!-- グループIDを使って、groupから色情報を取得する -->
-                                    {% set group_info = groups.get(item.group_id) %}
-                                    <!-- グループを設定していない場合のデフォルトの色を設定 -->
-                                    {% set bg_color = group_info.color if group_info else "#777" %}
+                                {% if date_key in schedules %}
+                                    {% for item in schedules[date_key] %}
+                                        <!-- グループIDを使って、groupから色情報を取得する -->
+                                        {% set group_info = groups.get(item.group_id) %}
+                                        <!-- グループを設定していない場合のデフォルトの色を設定 -->
+                                        {% set bg_color = group_info.color if group_info else "#777" %}
 
-                                    <!-- 表示部分を「データ属性付き(data-)」に改造。
-                                     　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
-                                    <div class="schedule-item"
-                                         data-title = "{{ item.title }}"
-                                         data-time = "{{ item.time }}"
-                                         data-locked = "{{ 'true' if item.is_locked else 'false' }}"
-                                         data-password = "{{ item.password }}"
-                                         data-memo = "{{ item.memo }}"
-                                         data-group-id = "{{ item.group_id }}"
-                                         style="background-color: {{ bg_color }};
-                                                color: white;
-                                                padding: 2px 4px;
-                                                border-radius: 3px;
-                                                margin-bottom: 2px;
-                                                white-space: nowrap;
-                                                overflow: hidden;
-                                                text-overflow: ellipsis;">
+                                        <!-- 表示部分を「データ属性付き(data-)」に改造。
+                                         　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
+                                        <div class="schedule-item"
+                                             data-title = "{{ item.title }}"
+                                             data-time = "{{ item.time }}"
+                                             data-locked = "{{ 'true' if item.is_locked else 'false' }}"
+                                             data-password = "{{ item.password }}"
+                                             data-memo = "{{ item.memo }}"
+                                             data-group-id = "{{ item.group_id }}"
+                                             style="background-color: {{ bg_color }};
+                                                    color: white;
+                                                    padding: 2px 4px;
+                                                    border-radius: 3px;
+                                                    margin-bottom: 2px;
+                                                    white-space: nowrap;
+                                                    overflow: hidden;
+                                                    text-overflow: ellipsis;">
 
-                                        {% if item.is_locked %}
-                                            <span>🔒ロック中</span>
-                                        {% else %}
-                                            <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
-                                            {{ item.time if item.time != "23:59" else "" }} {{ item.title }}
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-
-                        <!-- 祝日名の表示 -->
-                            {% if is_holiday %}
-                                <div style="font-size: 0.6em; color: red; font-weight: bold;">{{ holiday_name }}</div>
-                            {% endif %}
+                                            {% if item.is_locked %}
+                                                <span>🔒ロック中</span>
+                                            {% else %}
+                                                <!-- 時間を設定している場合（並び替え時に自動付与される23:59ではない場合）は時間も合わせて表示する -->
+                                                {{ item.time if item.time != "23:59" else "" }} {{ item.title }}
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
                         {% endif %}
-
                     </div>
                 {% endfor %}
             {% endfor %}
