@@ -6,13 +6,26 @@
             .calendar-grid{
                 display: grid;
                 grid-template-columns: repeat(7, 1fr); /*7列に並べる*/
-                gap: 10px;
-                max-width: 500px;
+                gap: 2px;
+                width: 100%;
+                max-width: 1000px;
+                margin: 0 auto;
+                border: 1px solid #ddd;
+                background-color: #ddd;
             }
             .day-box{
-                border: 1px solid #ccc;
-                padding: 10px;
+                background-color: white;
+                padding: 5px;
                 text-align: center;
+                min-height: 80px;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden; /*予定が溢れたら隠す*/
+            }
+            .schedule-item { 
+                color: white; padding: 2px 4px; border-radius: 3px; margin-bottom: 2px;
+                cursor: pointer; font-size: 0.75em; white-space: nowrap; 
+                overflow: hidden; text-overflow: ellipsis;
             }
             .sat{
                 color: blue;
@@ -67,7 +80,24 @@
                 margin-bottom: 5px;
                 display: block;
             }
-        /* ======================================================== */
+        /* ====スマホ用の調整（メディアクエリ）====================== */
+            @media (max-width: 600px) {
+                .day-box {
+                    min-height: 60px;
+                    padding: 2px;
+                }
+                .day-number {
+                    font-size: 0.8em;
+                }
+                .holiday-label {
+                    display: none;
+                }
+                .schedule-item {
+                    font-size: 0.8em;
+                    padding: 1px 2px;
+                }
+            }
+            
         </style>
     </head>
 
@@ -153,14 +183,7 @@
                                              data-password = "{{ item.password }}"
                                              data-memo = "{{ item.memo }}"
                                              data-group-id = "{{ item.group_id }}"
-                                             style="background-color: {{ bg_color }};
-                                                    color: white;
-                                                    padding: 2px 4px;
-                                                    border-radius: 3px;
-                                                    margin-bottom: 2px;
-                                                    white-space: nowrap;
-                                                    overflow: hidden;
-                                                    text-overflow: ellipsis;">
+                                             style="background-color: {{ bg_color }};">
 
                                             {% if item.is_locked %}
                                                 <span>🔒ロック中</span>
