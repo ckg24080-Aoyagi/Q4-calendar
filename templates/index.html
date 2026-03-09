@@ -83,7 +83,7 @@
         /* ====スマホ用の調整（メディアクエリ）====================== */
             @media (max-width: 600px) {
                 .day-box {
-                    min-height: 60px;
+                    min-height: 75px;
                     padding: 2px;
                 }
                 .day-number {
@@ -95,6 +95,7 @@
                 .schedule-item {
                     font-size: 0.8em;
                     padding: 1px 2px;
+                    margin-bottom: 1px;
                 }
             }
             
@@ -168,22 +169,26 @@
                                 {% set date_key = "%04d-%02d-%02d" | format(year, month, day) %}
    
                                 {% if date_key in schedules %}
-                                    {% for item in schedules[date_key] %}
+                                    {% set day_schedules = schedules[date_key] %}
+
+                                    {% for item in day_schedules %}
                                         <!-- グループIDを使って、groupから色情報を取得する -->
                                         {% set group_info = groups.get(item.group_id) %}
                                         <!-- グループを設定していない場合のデフォルトの色を設定 -->
                                         {% set bg_color = group_info.color if group_info else "#777" %}
 
                                         <!-- 表示部分を「データ属性付き(data-)」に改造。
-                                         　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
+                                        　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
                                         <div class="schedule-item"
-                                             data-title = "{{ item.title }}"
-                                             data-time = "{{ item.time }}"
-                                             data-locked = "{{ 'true' if item.is_locked else 'false' }}"
-                                             data-password = "{{ item.password }}"
-                                             data-memo = "{{ item.memo }}"
-                                             data-group-id = "{{ item.group_id }}"
-                                             style="background-color: {{ bg_color }};">
+                                            data-title = "{{ item.title }}"
+                                            data-time = "{{ item.time }}"
+                                            data-locked = "{{ 'true' if item.is_locked else 'false' }}"
+                                            data-password = "{{ item.password }}"
+                                            data-memo = "{{ item.memo }}"
+                                            data-group-id = "{{ item.group_id }}"
+                                            style="background-color: {{ bg_color }};
+                                                    {{ 'display: none;' if loop.index > 3 else '' }}">
+                                                    <!-- ↑４件目以降を非表示にする -->
 
                                             {% if item.is_locked %}
                                                 <span>🔒ロック中</span>
@@ -193,6 +198,13 @@
                                             {% endif %}
                                         </div>
                                     {% endfor %}
+
+                                    <!-- ４件目以上ある場合、「他〇件」と表示 -->
+                                    {% if day_schedules | length > 3 %}
+                                        <div class="more-count" style="font-size: 0.8em; color: #888; text-align: right; padding-right: 2px;">
+                                            他{{ day_schedules | length - 3 }}件...
+                                        </div>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         {% endif %}
@@ -344,7 +356,8 @@
 
                 //カレンダーのマス(schedule-X)の中にある予定をコピーしてモーダルに表示する
                 const scheduleBox = document.getElementById('schedule-' + day);
-                const dayBoxSchedules = scheduleBox.children;
+                //.schedule-item.クラスがついている要素だけを取得する(「他〇件...」を間違えて取得しないようにする)
+                const dayBoxSchedules = scheduleBox.querySelectorAll('.schedule-item');
 
                 if (dayBoxSchedules.length === 0) {
                     modalList.innerHTML = "<li style='color: #888;'>予定はありません</li>";
