@@ -7,6 +7,7 @@ import json
 import os
 import time
 from datetime import datetime
+from pydantic import BaseModel
 
 #FastAPI の app(アプリの本体) を作る
 app = FastAPI()
@@ -186,3 +187,35 @@ async def delete_group_api(request: Request):
         save_to_file()
         
     return {"status": "success"}
+
+#ドラッグ＆ドロップ
+class MoveRequest(BaseModel):
+    from_date: str
+    index: int
+    to_date: str
+    
+@app.post("/move_schedule")
+async def move_schedule(req: MoveRequest):
+    #元の日付から予定を取り出す
+    if req.from_date in schedules and len(schedules[req.from_date]) > req.index:
+        item = schedules[req.from_date][req.index]
+        
+        #ロックされている予定は移動不可にする
+        if item.get("is_locked"):
+            return JSONResponse(status_code=403, content={"detail": "Locked"})
+        
+        #元の日付から削除
+        schedules[req. from_date].pop(req.index)
+        
+        if req.to_date not in schedules:
+            schedules[req.to_date] = []
+        schedules[req.to_date].append(item)
+        
+        #0件になったらキーごと消す
+        if not schedules[req.from_date]:
+            del schedules[req.from_date]
+            
+        #新しい日付に追加
+        save_schedule_api(schedules)
+        return {"status": "success"}
+    return JSONResponse(status_code=400, content={"detail": "Failed"})

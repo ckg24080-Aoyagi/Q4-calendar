@@ -147,8 +147,12 @@
                     <div class="day-box {{ 'today' if is_today else '' }}
                                         {{ 'sat-bg' if is_sat else '' }}
                                         {{ 'sun-holiday-bg' if is_sun_or_holiday else '' }}"
-                         style="cursor: pointer; min-height: 90px; display: flex; flex-direction: column;"
-                         onclick="openModal('{{ day }}')">
+
+                        ondragover="allowDrop(event)"
+                        ondrop="drop(event, '{{ "%04d-%02d-%02d" | format(year, month, day) if day != 0 else "" }}')"
+
+                        style="cursor: pointer; min-height: 90px; display: flex; flex-direction: column;"
+                        onclick="openModal('{{ day }}')">
 
                         {% if day != 0 %}
                             <div style="text-align: left; margin-bottom: 4px;">
@@ -180,6 +184,10 @@
                                         <!-- 表示部分を「データ属性付き(data-)」に改造。
                                         　　これにより、画面には「ロック中」と出しながら、プログラムは裏で本当の予定名等を知ることができる -->
                                         <div class="schedule-item"
+
+                                            draggable="true"
+                                            ondragstart="drag(event, '{{ date_key }}', {{ loop.index0 }})"
+                                          
                                             data-title = "{{ item.title }}"
                                             data-time = "{{ item.time }}"
                                             data-locked = "{{ 'true' if item.is_locked else 'false' }}"
@@ -753,6 +761,50 @@
             function closeGroupManageModal() {
                 document.getElementById('group-manage-modal').style.display = 'none';
                 overlay.style.display = 'none';
+            }
+
+        
+        //========================================================================================================================
+        //ドラッグ＆ドロップ操作
+        //========================================================================================================================
+
+            //ドラッグ開始時：　どの日の、何番目の予定かを記録する
+            function drag(ev, dateKey, index) {
+                const data = { dateKey: dateKey, index: index };
+                ev.dataTransfer.setData("text", JSON.stringify(data));
+            }
+
+            //ドロップ許可：　ブラウザのデフォルト動作（拒否）を無効にする
+            function allowDrop(ev) {
+                ev.preventDefault();
+            }
+
+            //ドロップ時：　サーバーに「移動」をリクエストする
+            async function drop(ev, targetDate) {
+                ev.preventDefault();
+                if (!targetDate) return;
+
+                const rawData = ev.dataTransfer.getData("text");
+                const dragData = JSON.parse(rawData);
+
+                //同じ日にドロップした場合は何もしない
+                if (dragData.dateKey === targetDate) return;
+
+                const response = await fetch("/move_schedule", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        from_date: dragData.dateKey,
+                        index: dragData.index,
+                        to_date: targetDate
+                    })
+                });
+
+                if (response.ok) {
+                    location.reload(); //移動完了後に再読み込み
+                } else {
+                    alert("移動に失敗しました。ロックされている可能性があります。")
+                }
             }
 
 
